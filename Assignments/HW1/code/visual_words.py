@@ -15,7 +15,7 @@ import matplotlib.pyplot as plt
 import util
 
 # Globals
-SAMPLE_RESPONSES_PATH = '../data/sampled_responses'
+SAMPLED_RESPONSES_PATH = '../data/sampled_responses'
 PROGRESS = 0
 PROGRESS_LOCK = multiprocessing.Lock()
 
@@ -117,7 +117,7 @@ def compute_dictionary_one_image(args):
         sampled_response.append(filter_responses[ran_h, ran_w, :])
     
     # Save the sampled responses
-    np.save('%s/%d'%(SAMPLE_RESPONSES_PATH, i), np.asarray(sampled_response))
+    np.save('%s/%d'%(SAMPLED_RESPONSES_PATH, i), np.asarray(sampled_response))
 
 def compute_dictionary(num_workers=2):
     '''
@@ -134,8 +134,8 @@ def compute_dictionary(num_workers=2):
     train_data = np.load('../data/train_data.npz')
 
     # Create folders to save filter responses
-    if not os.path.exists(SAMPLE_RESPONSES_PATH):
-        os.makedirs(SAMPLE_RESPONSES_PATH)
+    if not os.path.exists(SAMPLED_RESPONSES_PATH):
+        os.makedirs(SAMPLED_RESPONSES_PATH)
 
     # BoW parameters
     alpha = 50
@@ -150,7 +150,7 @@ def compute_dictionary(num_workers=2):
     pool.join()
 
     # Load all saved sample responses
-    sampled_responses = [ np.load(os.path.join(SAMPLE_RESPONSES_PATH, sample_path)) for sample_path in os.listdir(SAMPLE_RESPONSES_PATH) ]
+    sampled_responses = [ np.load(os.path.join(SAMPLED_RESPONSES_PATH, sample_path)) for sample_path in os.listdir(SAMPLED_RESPONSES_PATH) ]
     sampled_responses = np.asarray(sampled_responses).reshape(alpha * n_train, 60)
 
     # Cluster using K-means and save the dictionary

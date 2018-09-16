@@ -15,6 +15,7 @@ import matplotlib.pyplot as plt
 import util
 
 # Globals
+SAMPLE_RESPONSES_PATH = '../data/sampled_responses'
 PROGRESS = 0
 PROGRESS_LOCK = multiprocessing.Lock()
 
@@ -116,7 +117,7 @@ def compute_dictionary_one_image(args):
         sampled_response.append(filter_responses[ran_h, ran_w, :])
     
     # Save the sampled responses
-    np.save('../data/sampled_responses/%d'%i, np.asarray(sampled_response))
+    np.save('%s/%d'%(SAMPLE_RESPONSES_PATH, i), np.asarray(sampled_response))
 
 def compute_dictionary(num_workers=2):
     '''
@@ -133,12 +134,26 @@ def compute_dictionary(num_workers=2):
     train_data = np.load('../data/train_data.npz')
 
     # Create folders to save filter responses
-    if not os.path.exists('../data/sampled_responses'):
-        os.makedirs('../data/sampled_responses')
+    if not os.path.exists(SAMPLE_RESPONSES_PATH):
+        os.makedirs(SAMPLE_RESPONSES_PATH)
+
+    # BoW parameters
+    alpha = 50
+    n_clusters = 100
+    n_train = train_data['image_names'].shape[0]
 
     # Multiprocess feature extraction and sampling
-    args = [ (i, 50, train_data['image_names'][i][0]) for i in range(train_data['image_names'].shape[0]) ]
+    args = [ (i, alpha, train_data['image_names'][i][0]) for i in range(n_train) ]
     pool = multiprocessing.Pool(processes=num_workers)
     pool.map(compute_dictionary_one_image, args)
     pool.close()
     pool.join()
+
+    # Load all saved sample responses
+    sampled_responses = [ np.load(os.path.join(SAMPLE_RESPONSES_PATH, sample_path)) for sample_path in os.listdir(SAMPLE_RESPONSES_PATH) ]
+    sampled_responses = np.asarray(sampled_responses).reshape(alpha * n_train, 60)
+
+    # Cluster using K-means and save the dictionary
+    kmeans = sklearn.cluster.KMeans(n_clusters=n_clusters, n_jobs=num_workers, verbose=1).fit(sampled_responses)
+    dictionary = kmeans.cluster_centers_
+    np.save('../data/dictionary_k%d_a%d'%(n_clusters, alpha), dictionary)

@@ -19,7 +19,7 @@ if __name__ == '__main__':
     # filter_responses = visual_words.extract_filter_responses(image)
     # util.display_filter_responses(filter_responses)
 
-    visual_words.compute_dictionary(num_workers=num_cores)
+    # visual_words.compute_dictionary(num_workers=num_cores)
     
     # dictionary = np.load('dictionary.npy')
     # img = visual_words.get_visual_words(image,dictionary)

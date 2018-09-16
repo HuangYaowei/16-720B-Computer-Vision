@@ -13,7 +13,7 @@ if __name__ == '__main__':
     num_cores = util.get_num_CPU()
 
     # path_img = "../data/kitchen/sun_aasmevtpkslccptd.jpg"
-    # path_img = "../data/sun_afrrjykuhhlwiwun.jpg"
+    # path_img = "../data/auditorium/sun_afcwsapxpihedtku.jpg" # 4 channels
     # image = skimage.io.imread(path_img)
     # image = image.astype('float')/255
     # filter_responses = visual_words.extract_filter_responses(image)

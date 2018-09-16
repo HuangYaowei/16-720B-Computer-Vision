@@ -14,6 +14,10 @@ import matplotlib.pyplot as plt
 
 import util
 
+# Globals
+PROGRESS = 0
+PROGRESS_LOCK = multiprocessing.Lock()
+
 def extract_filter_responses(image):
     '''
     Extracts the filter responses for the given image.
@@ -33,7 +37,7 @@ def extract_filter_responses(image):
 
     # Convert higher channel images to 3 channels
     if image.shape[2] > 3:
-        image = image[:, :, :2]
+        image = image[:, :, :3]
     
     # Convert RGB to LAB color space
     image_lab = skimage.color.rgb2lab(image)
@@ -48,12 +52,12 @@ def extract_filter_responses(image):
         for i in range(0, 3): 
             filter_responses.append(scipy.ndimage.gaussian_laplace(image_lab[:, :, i], sigma=sigma))
         
-        # X axis deriviative of gaussian + gaussian filter
+        # X axis derivative of gaussian + gaussian filter
         for i in range(0, 3): 
             temp = scipy.ndimage.gaussian_filter1d(image_lab[:, :, i], sigma=sigma, axis=1, order=1)
             filter_responses.append(scipy.ndimage.gaussian_filter1d(temp, sigma=sigma, axis=0))
         
-        # Y axis deriviative of gaussian + gaussian filter
+        # Y axis derivative of gaussian + gaussian filter
         for i in range(0, 3): 
             temp = scipy.ndimage.gaussian_filter1d(image_lab[:, :, i], sigma=sigma, axis=0, order=1)
             filter_responses.append(scipy.ndimage.gaussian_filter1d(temp, sigma=sigma, axis=1))
@@ -88,13 +92,31 @@ def compute_dictionary_one_image(args):
     * time_start: time stamp of start time
 
     [saved]
-    * sampled_response: numpy.ndarray of shape (alpha,3F)
+    * sampled_response: numpy.ndarray of shape (alpha, 3F)
     '''
 
+    global PROGRESS
+    with PROGRESS_LOCK: PROGRESS += 8
+
     i, alpha, image_path = args
+    print('Processing: %04d/1440 | Index: %04d | Path: %s'%(PROGRESS, i, image_path))
+
+    # Read image
     image = skimage.io.imread('../data/' + image_path)
     image = image.astype('float')/255
+    
+    # Extract filter responses
     filter_responses = extract_filter_responses(image)
+
+    # Randomly select alpha responses for all channels
+    sampled_response = []
+    for j in range(alpha):
+        ran_h = np.random.choice(image.shape[0])
+        ran_w = np.random.choice(image.shape[1])
+        sampled_response.append(filter_responses[ran_h, ran_w, :])
+    
+    # Save the sampled responses
+    np.save('../data/sampled_responses/%d'%i, np.asarray(sampled_response))
 
 def compute_dictionary(num_workers=2):
     '''
@@ -104,28 +126,19 @@ def compute_dictionary(num_workers=2):
     * num_workers: number of workers to process in parallel
     
     [saved]
-    * dictionary: numpy.ndarray of shape (K,3F)
+    * dictionary: numpy.ndarray of shape (K, 3F)
     '''
 
-    labels = ['kitchen', 'baseball_field', 'waterfall', 'highway',
-              'desert', 'windmill', 'laundromat', 'auditorium']
-
+    # Load train images data
     train_data = np.load('../data/train_data.npz')
 
-    # Create folders to save filter rsponses
-    if not os.path.exists('../data/filter_responses'):
-        os.makedirs('../data/filter_responses')
+    # Create folders to save filter responses
+    if not os.path.exists('../data/sampled_responses'):
+        os.makedirs('../data/sampled_responses')
 
-    for label in labels:
-        if not os.path.exists('../data/filter_responses/' + label):
-            os.makedirs('../data/filter_responses/' + label)
-
-    n = train_data['image_names'].shape[0]
-    for i in range(n):
-        image_path = train_data['image_names'][i][0]
-        label = train_data['labels'][i]
-        print('Processing:', image_path, label)
-
-        filter_responses = compute_dictionary_one_image((i, 1, image_path))
-        np.save('../data/filter_responses/%s'%(image_path.split('.')[0]), filter_responses)
-        break
+    # Multiprocess feature extraction and sampling
+    args = [ (i, 50, train_data['image_names'][i][0]) for i in range(train_data['image_names'].shape[0]) ]
+    pool = multiprocessing.Pool(processes=num_workers)
+    pool.map(compute_dictionary_one_image, args)
+    pool.close()
+    pool.join()

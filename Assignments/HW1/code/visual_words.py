@@ -77,9 +77,21 @@ def get_visual_words(image, dictionary):
     [output]
     * wordmap: numpy.ndarray of shape (H,W)
     '''
+
+    # Extract filter responses and reshape to (H*W, 3F)
+    filter_responses = extract_filter_responses(image)
+    filter_responses = filter_responses.reshape(filter_responses.shape[0] * filter_responses.shape[1], filter_responses.shape[2])
+
+    # Calculate euclidean distances (H*W, K) for each pixel with dictionary 
+    euclidean_distances = scipy.spatial.distance.cdist(filter_responses, dictionary)
+
+    # Create a wordmap with every pixel equal to the k index with least distance and reshape to (H, W)
+    wordmap = np.asarray([ np.argmin(pixel) for pixel in euclidean_distances ]).reshape(image.shape[0], image.shape[1])
+
+    # Display wordmap
+    util.display_image(wordmap, cmap='gist_ncar')
     
-    # ----- TODO -----
-    pass
+    return wordmap
 
 def compute_dictionary_one_image(args):
     '''
@@ -100,7 +112,7 @@ def compute_dictionary_one_image(args):
     with PROGRESS_LOCK: PROGRESS += 8
 
     i, alpha, image_path = args
-    print('Processing: %04d/1440 | Index: %04d | Path: %s'%(PROGRESS, i, image_path))
+    print('Processing: %04d/1440 | Index: %04d | Image: %s'%(PROGRESS, i, image_path))
 
     # Read image
     image = skimage.io.imread('../data/' + image_path)

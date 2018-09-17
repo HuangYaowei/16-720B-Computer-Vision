@@ -8,22 +8,29 @@ import deep_recog
 import visual_words
 import visual_recog
 
+def random_image():
+    train_data = np.load('../data/train_data.npz')
+    path = '../data/' + train_data['image_names'][np.random.choice(1440)][0]
+    print(path)
+    return path
+
 if __name__ == '__main__':
 
     num_cores = util.get_num_CPU()
 
-    # path_img = "../data/kitchen/sun_aasmevtpkslccptd.jpg"
-    # path_img = "../data/auditorium/sun_afcwsapxpihedtku.jpg" # 4 channels
-    # image = skimage.io.imread(path_img)
-    # image = image.astype('float')/255
+    path_img = "../data/kitchen/sun_aasmevtpkslccptd.jpg"
+    path_img = random_image()
+    path_img = "../data/auditorium/sun_afcwsapxpihedtku.jpg" # 4 channels
+    image = skimage.io.imread(path_img)
+    image = image.astype('float')/255
     # filter_responses = visual_words.extract_filter_responses(image)
     # util.display_filter_responses(filter_responses)
 
     # visual_words.compute_dictionary(num_workers=num_cores)
     
-    # dictionary = np.load('dictionary.npy')
-    # img = visual_words.get_visual_words(image,dictionary)
-    # util.save_wordmap(wordmap, filename)
+    dictionary = np.load('../data/dictionary.npy')
+    wordmap = visual_words.get_visual_words(image, dictionary)
+    # util.save_wordmap(wordmap, '../writeup/' + path_img.split('/')[-1])
     # visual_recog.build_recognition_system(num_workers=num_cores)
 
     # conf, accuracy = visual_recog.evaluate_recognition_system(num_workers=num_cores)

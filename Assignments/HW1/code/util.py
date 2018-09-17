@@ -42,7 +42,7 @@ def get_VGG16_weights():
 
     return vgg16_weights
 
-def display_image(image):
+def display_image(image, close_on_keypress=False, cmap=None):
     '''
     Displays an image.
 
@@ -58,11 +58,13 @@ def display_image(image):
     resp_max = image.max(axis=(0, 1), keepdims=True)
     image = (image - resp_min) / (resp_max - resp_min)
 
-    plt.imshow(image)
-    # plt.show()
-    plt.draw()
-    plt.waitforbuttonpress(0) # this will wait for indefinite time
-    plt.close(fig)
+    plt.imshow(image, cmap=cmap)
+    if close_on_keypress:
+        plt.draw()
+        plt.waitforbuttonpress(0) # this will wait for indefinite time
+        plt.close(fig)
+    else:
+        plt.show()
 
 def display_filter_responses(response_maps):
     '''
@@ -90,5 +92,4 @@ def save_wordmap(wordmap, filename):
     fig = plt.figure(2)
     plt.axis('equal')
     plt.axis('off')
-    plt.imshow(wordmap)
-    plt.savefig(filename, pad_inches=0)
+    plt.savefig(filename, bbox_inches='tight', pad_inches=0)

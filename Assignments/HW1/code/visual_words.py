@@ -53,15 +53,13 @@ def extract_filter_responses(image):
         for i in range(0, 3): 
             filter_responses.append(scipy.ndimage.gaussian_laplace(image_lab[:, :, i], sigma=sigma))
         
-        # X axis derivative of gaussian + gaussian filter
+        # X axis derivative of gaussian + Y axis gaussian filter
         for i in range(0, 3): 
-            temp = scipy.ndimage.gaussian_filter1d(image_lab[:, :, i], sigma=sigma, axis=1, order=1)
-            filter_responses.append(scipy.ndimage.gaussian_filter1d(temp, sigma=sigma, axis=0))
+            filter_responses.append(scipy.ndimage.gaussian_filter(image_lab[:, :, i], sigma=sigma, order=[0, 1]))
         
-        # Y axis derivative of gaussian + gaussian filter
+        # Y axis derivative of gaussian + X axis gaussian filter
         for i in range(0, 3): 
-            temp = scipy.ndimage.gaussian_filter1d(image_lab[:, :, i], sigma=sigma, axis=0, order=1)
-            filter_responses.append(scipy.ndimage.gaussian_filter1d(temp, sigma=sigma, axis=1))
+            filter_responses.append(scipy.ndimage.gaussian_filter(image_lab[:, :, i], sigma=sigma, order=[1, 0]))
 
     # Stack all 4 filters * 3 channels * 5 sigmas (60) channels
     filter_responses = np.dstack(filter_responses)
@@ -89,7 +87,7 @@ def get_visual_words(image, dictionary):
     wordmap = np.asarray([ np.argmin(pixel) for pixel in euclidean_distances ]).reshape(image.shape[0], image.shape[1])
 
     # Display wordmap
-    util.display_image(wordmap, cmap='gist_ncar')
+    # util.display_image(wordmap, cmap='gist_ncar')
     
     return wordmap
 

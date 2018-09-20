@@ -113,7 +113,7 @@ def compute_dictionary_one_image(args):
     print('Processing: %04d/1440 | Index: %04d | Image: %s'%(PROGRESS, i, image_path))
 
     # Read image
-    image = skimage.io.imread('../data/' + image_path)
+    image = imageio.imread('../data/' + image_path)
     image = image.astype('float')/255
     
     # Extract filter responses
@@ -147,7 +147,7 @@ def compute_dictionary(num_workers=2):
     if not os.path.exists(SAMPLED_RESPONSES_PATH):
         os.makedirs(SAMPLED_RESPONSES_PATH)
 
-    # BoW parameters
+    # Hyperparameters
     alpha = 50
     n_clusters = 100
     n_train = train_data['image_names'].shape[0]

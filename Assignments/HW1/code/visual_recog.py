@@ -2,13 +2,17 @@ import os
 import math
 import time
 import queue
-import threading
+import multiprocessing
 
 import imageio
 import numpy as np
 
 import util
 import visual_words
+
+# Globals
+PROGRESS = 0
+PROGRESS_LOCK = multiprocessing.Lock()
 
 def build_recognition_system(num_workers=2):
     '''
@@ -24,11 +28,23 @@ def build_recognition_system(num_workers=2):
     * SPM_layer_num: number of spatial pyramid layers
     '''
 
+    # Load data
     train_data = np.load("../data/train_data.npz")
     dictionary = np.load("dictionary.npy")
 
-    print(dictionary.shape)
+    # Hyperparameters
+    layer_num = 3
+    K = dictionary.shape[0]
+    n_train = train_data['image_names'].shape[0]
 
+    # Training images file path list
+    file_paths = [ train_data['image_names'][i][0] for i in range(n_train) ]
+
+    # Multiprocess feature extraction using SPM
+    pool = multiprocessing.Pool(processes=num_workers)
+    pool.map(get_image_feature, file_paths, dictionary, layer_num, K)
+    pool.close()
+    pool.join()
 
 def evaluate_recognition_system(num_workers=2):
     '''
@@ -42,14 +58,10 @@ def evaluate_recognition_system(num_workers=2):
     * accuracy: accuracy of the evaluated system
     '''
 
-
     test_data = np.load("../data/test_data.npz")
     trained_system = np.load("trained_system.npz")
-    # ----- TODO -----
-    pass
 
-
-
+    # TODO
 
 def get_image_feature(file_path, dictionary, layer_num, K):
     '''
@@ -62,30 +74,39 @@ def get_image_feature(file_path, dictionary, layer_num, K):
     * K: number of clusters for the word maps
 
     [output]
-    * feature: numpy.ndarray of shape (K)
+    * feature: numpy.ndarray of shape (K*(4^layer_num-1)/3))
     '''
-    pass
 
+    global PROGRESS
+    with PROGRESS_LOCK: PROGRESS += 8
+    print('Processing: %04d/1440 | Index: %04d | Image: %s'%(PROGRESS, i, file_path))
 
-    # ----- TODO -----
+    # Read image
+    image = imageio.imread('../data/' + file_path)
+    image = image.astype('float')/255
 
+    # Create visual wordmap for the image
+    wordmap = visual_words.get_visual_words(image, dictionary)
+
+    # Compute histogram features of visual words using spatial pyramid matching
+    feature = get_feature_from_wordmap_SPM(wordmap, layer_num, K)
+    return feature
 
 def distance_to_set(word_hist, histograms):
     '''
     Compute similarity between a histogram of visual words with all training image histograms.
 
     [input]
-    * word_hist: numpy.ndarray of shape (K)
-    * histograms: numpy.ndarray of shape (N, K)
+    * word_hist: numpy.ndarray of shape (K*(4^layer_num-1)/3))
+    * histograms: numpy.ndarray of shape (T, K*(4^layer_num-1)/3))
 
     [output]
-    * sim: numpy.ndarray of shape (N)
+    * sim: numpy.ndarray of shape (T)
     '''
-    pass
     
-
-
-    # ----- TODO -----
+    # Compute histogram similarity
+    sim = np.asarray([ np.sum(np.minimum(word_hist, hist)) for hist in histograms ])
+    return sim
 
 def split_image(array, levels):
     '''

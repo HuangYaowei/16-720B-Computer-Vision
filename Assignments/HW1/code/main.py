@@ -1,6 +1,6 @@
-import skimage.io
-import numpy as np
+import imageio
 import torchvision
+import numpy as np
 import matplotlib.pyplot as plt
 
 import util
@@ -21,23 +21,24 @@ if __name__ == '__main__':
     path_img = "../data/kitchen/sun_aasmevtpkslccptd.jpg"
     # path_img = random_image()
     # path_img = "../data/auditorium/sun_afcwsapxpihedtku.jpg" # 4 channels
-    image = skimage.io.imread(path_img)
-    image = image.astype('float')/255
+    # image = imageio.imread(path_img)
+    # image = image.astype('float')/255
     # filter_responses = visual_words.extract_filter_responses(image)
     # util.display_filter_responses(filter_responses)
 
     # visual_words.compute_dictionary(num_workers=num_cores)
     
-    dictionary = np.load('dictionary.npy')
+    # dictionary = np.load('dictionary.npy')
     # wordmap = visual_words.get_visual_words(image, dictionary)
-    wordmap = np.load('wordmap.npy')
-
+    # wordmap = np.load('wordmap.npy')
     # util.save_wordmap(wordmap, '../writeup/' + path_img.split('/')[-1])
-    
-    # visual_recog.get_feature_from_wordmap(wordmap, dictionary.shape[0])
-    visual_recog.get_feature_from_wordmap_SPM(wordmap, 3, dictionary.shape[0])
 
-    # visual_recog.build_recognition_system(num_workers=num_cores)
+    # UNIT TESTING
+    # visual_recog.get_feature_from_wordmap(wordmap, dictionary.shape[0])
+    # visual_recog.get_feature_from_wordmap_SPM(wordmap, 3, dictionary.shape[0])
+    # visual_recog.get_image_feature(path_img, dictionary, 3, dictionary.shape[0])
+
+    visual_recog.build_recognition_system(num_workers=num_cores)
     # conf, accuracy = visual_recog.evaluate_recognition_system(num_workers=num_cores)
     # print(conf)
     # print(np.diag(conf).sum()/conf.sum())
@@ -48,4 +49,3 @@ if __name__ == '__main__':
     # conf = deep_recog.evaluate_recognition_system(vgg16,num_workers=num_cores//2)
     # print(conf)
     # print(np.diag(conf).sum()/conf.sum())
-

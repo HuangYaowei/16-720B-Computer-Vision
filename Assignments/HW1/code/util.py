@@ -42,6 +42,13 @@ def get_VGG16_weights():
 
     return vgg16_weights
 
+def display_histogram(hist, bins=100):
+    fig, ax = plt.subplots()
+    plt.bar(range(bins), hist)
+    ax.set_xticks(range(bins))
+    ax.set_xticklabels(range(bins))
+    plt.show()
+    
 def display_image(image, close_on_keypress=False, cmap=None):
     '''
     Displays an image.

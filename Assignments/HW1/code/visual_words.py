@@ -18,6 +18,7 @@ import util
 SAMPLED_RESPONSES_PATH = '../data/sampled_responses'
 PROGRESS = 0
 PROGRESS_LOCK = multiprocessing.Lock()
+NPROC = util.get_num_CPU()
 
 def extract_filter_responses(image):
     '''
@@ -107,7 +108,7 @@ def compute_dictionary_one_image(args):
     '''
 
     global PROGRESS
-    with PROGRESS_LOCK: PROGRESS += 8
+    with PROGRESS_LOCK: PROGRESS += NPROC
 
     i, alpha, image_path = args
     print('Processing: %04d/1440 | Index: %04d | Image: %s'%(PROGRESS, i, image_path))
@@ -166,4 +167,7 @@ def compute_dictionary(num_workers=2):
     # Cluster using K-means and save the dictionary
     kmeans = sklearn.cluster.KMeans(n_clusters=n_clusters, n_jobs=num_workers, verbose=1).fit(sampled_responses)
     dictionary = kmeans.cluster_centers_
+
+    # TODO: Comment out one
     np.save('../data/dictionary_k%d_a%d'%(n_clusters, alpha), dictionary)
+    np.save('dictionary', dictionary)

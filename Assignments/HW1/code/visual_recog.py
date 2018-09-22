@@ -72,6 +72,9 @@ def evaluate_recognition_system(num_workers=2):
     * accuracy: accuracy of the evaluated system
     '''
     
+    global PROGRESS
+    PROGRESS = 0
+
     # Testing data
     test_data = np.load("../data/test_data.npz")
     test_labels = test_data['labels']
@@ -90,7 +93,7 @@ def evaluate_recognition_system(num_workers=2):
     
     # Hyperparameters
     K = dictionary.shape[0]
-    SPM_layer_num = trained_system['SPM_layer_num']
+    SPM_layer_num = int(trained_system['SPM_layer_num'])
 
     # Multiprocess feature extraction setup
     args = [ [file_path, dictionary, SPM_layer_num, K, features, train_labels] for file_path in file_paths ]
@@ -107,7 +110,7 @@ def evaluate_recognition_system(num_workers=2):
     confusion_matrix = sklearn.metrics.confusion_matrix(test_labels, predicted_labels)
     accuracy_score = sklearn.metrics.accuracy_score(test_labels, predicted_labels)
 
-    print('Confusion Matrix:', confusion_matrix)
+    print('Confusion Matrix:\n', confusion_matrix)
     print('Accuracy Score:', accuracy_score)
 
     return confusion_matrix, accuracy_score

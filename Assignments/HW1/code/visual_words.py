@@ -149,7 +149,7 @@ def compute_dictionary(num_workers=2):
         os.makedirs(SAMPLED_RESPONSES_PATH)
 
     # Hyperparameters
-    alpha = 50
+    alpha = 150
     n_clusters = 100
     n_train = train_data['image_names'].shape[0]
 
@@ -165,7 +165,8 @@ def compute_dictionary(num_workers=2):
     sampled_responses = np.asarray(sampled_responses).reshape(alpha * n_train, 60)
 
     # Cluster using K-means and save the dictionary
-    kmeans = sklearn.cluster.KMeans(n_clusters=n_clusters, n_jobs=num_workers, verbose=1).fit(sampled_responses)
+    print('Clustering into K-means...')
+    kmeans = sklearn.cluster.KMeans(n_clusters=n_clusters, n_jobs=num_workers).fit(sampled_responses)
     dictionary = kmeans.cluster_centers_
 
     # TODO: Comment out one

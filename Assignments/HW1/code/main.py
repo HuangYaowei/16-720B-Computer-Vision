@@ -1,12 +1,11 @@
 import imageio
-# import torchvision
 import numpy as np
-import matplotlib.pyplot as plt
+# import torchvision
 
 import util
-# import deep_recog
 import visual_words
 import visual_recog
+# import deep_recog
 
 def random_image():
     train_data = np.load('../data/train_data.npz')

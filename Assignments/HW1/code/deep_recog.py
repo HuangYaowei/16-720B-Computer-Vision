@@ -64,7 +64,7 @@ def build_recognition_system(vgg16, num_workers=2):
     if not os.path.exists(TEMP_PATH):
         os.makedirs(TEMP_PATH)
 
-    Multiprocess feature extraction
+    # Multiprocess feature extraction
     args = [ (i, train_data['image_names'][i][0], vgg16) for i in range(n_train) ]
     pool = multiprocessing.Pool(processes=num_workers)
     pool.map(get_image_feature, args)

@@ -18,21 +18,43 @@ def extract_deep_feature(x, vgg16_weights):
     * feat: numpy.ndarray of shape (K)
     '''
 
+    # Run VGG-16 feature layers
+    x = run_network_layers(x, vgg16_weights, 0, 31)
+
+    # Reshape output and flattenn it the PyTorch way!
+    x = np.swapaxes(np.swapaxes(x, 0, 2), 1, 2).flatten()
+
+    # Run VGG-16 classifier layers
+    x = run_network_layers(x, vgg16_weights, 31, 35)
+
+    return x
+
+def run_network_layers(x, vgg16_weights, start, end):
+    '''
+    Wrapper function for extract_deep_feature.
+
+    [input]
+    * x: numpy.ndarray of shape (H, W, 3)
+    * vgg16_weights: numpy.ndarray of shape (L, 3)
+
+    [output]
+    * feat: numpy.ndarray of shape (K)
+    '''
+
     ops = {'conv2d': multichannel_conv2d, 'relu': relu,
            'maxpool2d': max_pool2d, 'linear': linear}
 
     # Pass image through the different layers of VGG-16
-    for layer in vgg16_weights[:35]:
-        print('\n', layer[0], '-'*30)
+    for layer in vgg16_weights[start:end]:
+        print('\n%s %s'%(layer[0], '-'*30))
         print('Input:', x.shape)
 
+        # Extract weights and bias and run opertaions
         args = [x] + layer[1:] if (len(layer) > 1) else [x]
         x = ops[layer[0]](*args)
 
         print('Output:', x.shape)
 
-    np.save('deep_features', x)
-    print(x.shape)
     return x
 
 def multichannel_conv2d(x, weight, bias):
@@ -52,10 +74,10 @@ def multichannel_conv2d(x, weight, bias):
     for i in range(weight.shape[0]):
         H = []
         for j in range(weight.shape[1]):
-            # Flip LR the weight matrix
-            W = np.fliplr(weight[i, j, :, :])
+            # Flip the weight matrix
+            W = np.flip(weight[i, j, :, :])
             # 2D convolve on each input channel
-            H.append(scipy.ndimage.convolve(x[:, :, j], W))
+            H.append(scipy.ndimage.convolve(x[:, :, j], W, cval=0.0, mode='constant'))
         # Sum up all the convulution responses and the bias term
         y.append(sum(H) + bias[i])
 
@@ -118,5 +140,5 @@ def linear(x, W, b):
     * y: numpy.ndarray of shape (output_dim)
     '''
     
-    y = np.dot(W, x.flatten()) + b
+    y = np.matmul(x, W.transpose()) + b
     return y

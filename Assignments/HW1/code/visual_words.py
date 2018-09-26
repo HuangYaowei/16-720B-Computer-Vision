@@ -1,9 +1,21 @@
+#!/usr/bin/python3
+
+'''
+16-720B Computer Vision (Fall 2018)
+Homework 1 - Spatial Pyramid Matching for Scene Classification
+'''
+
+__author__ = "Heethesh Vhavle"
+__credits__ = ["Simon Lucey", "16-720B TAs"]
+__version__ = "1.0.1"
+__email__ = "heethesh@cmu.edu"
+
+# In-built modules
 import os
 import math
-import time
-import random
 import multiprocessing
 
+# External modules
 import imageio
 import skimage
 import numpy as np
@@ -12,17 +24,18 @@ import sklearn.cluster
 import scipy.spatial.distance
 import matplotlib.pyplot as plt
 
+# Local python modules
 import util
 
 # Globals
-SAMPLED_RESPONSES_PATH = '../data/sampled_responses'
 PROGRESS = 0
 PROGRESS_LOCK = multiprocessing.Lock()
 NPROC = util.get_num_CPU()
+SAMPLED_RESPONSES_PATH = '../data/sampled_responses'
 
 def extract_filter_responses(image):
     '''
-    Extracts the filter responses for the given image.
+    Extracts the filter responses for the given image
 
     [input]
     * image: numpy.ndarray of shape (H,W) or (H,W,3)
@@ -68,7 +81,7 @@ def extract_filter_responses(image):
 
 def get_visual_words(image, dictionary):
     '''
-    Compute visual words mapping for the given image using the dictionary of visual words.
+    Compute visual words mapping for the given image using the dictionary of visual words
 
     [input]
     * image: numpy.ndarray of shape (H,W) or (H,W,3)
@@ -94,7 +107,7 @@ def get_visual_words(image, dictionary):
 
 def compute_dictionary_one_image(args):
     '''
-    Extracts random samples of the dictionary entries from an image.
+    Extracts random samples of the dictionary entries from an image
     This is a function run by a subprocess.
 
     [input]
@@ -132,7 +145,7 @@ def compute_dictionary_one_image(args):
 
 def compute_dictionary(num_workers=2):
     '''
-    Creates the dictionary of visual words by clustering using k-means.
+    Creates the dictionary of visual words by clustering using k-means
 
     [input]
     * num_workers: number of workers to process in parallel
@@ -168,7 +181,4 @@ def compute_dictionary(num_workers=2):
     print('Clustering into K-means...')
     kmeans = sklearn.cluster.KMeans(n_clusters=n_clusters, n_jobs=num_workers).fit(sampled_responses)
     dictionary = kmeans.cluster_centers_
-
-    # TODO: Comment out one
-    np.save('../data/dictionary_k%d_a%d'%(n_clusters, alpha), dictionary)
     np.save('dictionary', dictionary)

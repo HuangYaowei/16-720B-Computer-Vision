@@ -1,13 +1,29 @@
+#!/usr/bin/python3
+
+'''
+16-720B Computer Vision (Fall 2018)
+Homework 1 - Spatial Pyramid Matching for Scene Classification
+'''
+
+__author__ = "Heethesh Vhavle"
+__credits__ = ["Simon Lucey", "16-720B TAs"]
+__version__ = "1.0.1"
+__email__ = "heethesh@cmu.edu"
+
+# In-built modules
 import os
 import multiprocessing
 
+# External modules
 import scipy
 import torch
 import imageio
 import numpy as np
+import sklearn.metrics
 import skimage.transform
 import torchvision.transforms
 
+# Local python modules
 import util
 import network_layers
 
@@ -22,19 +38,21 @@ image2tensor = torchvision.transforms.ToTensor()
 # Multiprocess globals
 PROGRESS = 0
 PROGRESS_LOCK = multiprocessing.Lock()
-NPROC = 2 # util.get_num_CPU()
+NPROC = util.get_num_CPU()//2
+TEMP_PATH = '../data/deep_features'
 
 def build_recognition_system(vgg16, num_workers=2):
     '''
-    Creates a trained recognition system by generating training features from all training images.
+    Creates a trained recognition system by generating training features from all training images
 
     [input]
     * vgg16: prebuilt VGG-16 network.
     * num_workers: number of workers to process in parallel
 
     [saved]
-    * features: numpy.ndarray of shape (N, K)
-    * labels: numpy.ndarray of shape (N)
+    * trained_system.npz: numpy compressed file with following contents
+        - features: numpy.ndarray of shape (N, K)
+        - labels: numpy.ndarray of shape (N)
     '''
 
     # Load training data
@@ -42,20 +60,26 @@ def build_recognition_system(vgg16, num_workers=2):
     n_train = train_data['image_names'].shape[0]
     labels = np.asarray(train_data['labels'])
 
-    # Multiprocess feature extraction
-    # TODO: Remove NPROC
+    # Create folders to save features
+    if not os.path.exists(TEMP_PATH):
+        os.makedirs(TEMP_PATH)
+
+    Multiprocess feature extraction
     args = [ (i, train_data['image_names'][i][0], vgg16) for i in range(n_train) ]
-    pool = multiprocessing.Pool(processes=NPROC)
-    features = np.asarray(pool.imap(get_image_feature, args))
+    pool = multiprocessing.Pool(processes=num_workers)
+    pool.map(get_image_feature, args)
     pool.close()
     pool.join()
+
+    # Load the save extracted features
+    features = [ np.load(os.path.join(TEMP_PATH, '%d.npy'%i)) for i in range(n_train) ]
 
     # Save all the trained data
     np.savez_compressed('trained_system_deep', features=features, labels=labels)
 
 def evaluate_recognition_system(vgg16, num_workers=2):
     '''
-    Evaluates the recognition system for all test images and returns the confusion matrix.
+    Evaluates the recognition system for all test images and returns the confusion matrix
 
     [input]
     * vgg16: prebuilt VGG-16 network.
@@ -81,14 +105,11 @@ def evaluate_recognition_system(vgg16, num_workers=2):
     train_labels = trained_system['labels']
 
     # Multiprocess feature extraction
-    # TODO: Remove NPROC
     args = [ (test_data['image_names'][i][0], features, train_labels, vgg16) for i in range(n_test) ]
-    pool = multiprocessing.Pool(processes=NPROC)
-    predicted_labels = np.asarray(pool.imap(predict_image, args))
+    pool = multiprocessing.Pool(processes=num_workers)
+    predicted_labels = np.asarray(pool.map(predict_image, args))
     pool.close()
     pool.join()
-
-    np.save('predicted_labels_deep', predicted_labels)
 
     # Evaluate the metrics
     confusion_matrix = sklearn.metrics.confusion_matrix(test_labels, predicted_labels)
@@ -101,7 +122,13 @@ def evaluate_recognition_system(vgg16, num_workers=2):
 
 def evaluate_custom_implementation(vgg16):
     '''
-    TODO: Document this function
+    Evaluates the custom implementation with PyTorch outputs
+
+    [input]
+    * vgg16: prebuilt VGG-16 network.
+
+    [output]
+    * comparison: boolean representing success/failure
     '''
 
     global USE_PYTORCH
@@ -128,13 +155,14 @@ def evaluate_custom_implementation(vgg16):
 
 def preprocess_image(image):
     '''
-    Preprocesses the image to load into the prebuilt network.
+    Preprocesses the image to load into the prebuilt network
 
     [input]
     * image: numpy.ndarray of shape (H, W, 3)
 
     [output]
-    * image_processed: torch.Tensor of shape (3, H, W)
+    * image_processed: torch.Tensor of shape (1, 3, H, W) (USE_PYTORCH=True)
+    * image_processed: numpy.ndarray of shape (H, W, 3) (USE_PYTORCH=False)
     '''
 
     # Convert grayscale images to 3 channels
@@ -156,13 +184,13 @@ def preprocess_image(image):
 
 def get_image_feature(args):
     '''
-    Extracts deep features from the prebuilt VGG-16 network.
-    This is a function run by a subprocess.
+    Extracts deep features from the prebuilt VGG-16 network
+    This is a function run by a subprocess
 
     [input]
     * i: index of training image
     * image_path: path of image file
-    * vgg16: prebuilt VGG-16 network.
+    * vgg16: prebuilt VGG-16 network
     
     [saved]
     * feat: evaluated deep feature
@@ -185,11 +213,13 @@ def get_image_feature(args):
     else:
         feat = network_layers.extract_deep_feature(image, util.get_VGG16_weights())
 
+    # Save the extracted features
+    np.save('%s/%d'%(TEMP_PATH, i), feat)
     return feat
 
 def distance_to_set(feature, train_features):
     '''
-    Compute distance between a deep feature with all training image deep features.
+    Compute distance between a deep feature with all training image deep features
 
     [input]
     * feature: numpy.ndarray of shape (K)
@@ -200,12 +230,22 @@ def distance_to_set(feature, train_features):
     '''
 
     # Calculate euclidean distances for every feature
-    dist = np.asarray(scipy.spatial.distance.cdist(train_features, feature))
+    dist = np.asarray(scipy.spatial.distance.cdist(train_features, np.expand_dims(feature, axis=0)))
     return dist
 
 def predict_image(args):
     '''
-    TODO: Document this function
+    Predicts the label using the trained system and extracted VGG-16 features
+    This is a function run by a subprocess.
+
+    [input]
+    * image_path: path of image file
+    * features: trained features from VGG-16
+    * train_labels: trained set of labels 
+    * vgg16: prebuilt VGG-16 network
+    
+    [output]
+    * predicted_label: int representing the predicted label
     '''
 
     global PROGRESS

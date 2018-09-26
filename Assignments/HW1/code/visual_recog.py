@@ -1,13 +1,25 @@
+#!/usr/bin/python3
+
+'''
+16-720B Computer Vision (Fall 2018)
+Homework 1 - Spatial Pyramid Matching for Scene Classification
+'''
+
+__author__ = "Heethesh Vhavle"
+__credits__ = ["Simon Lucey", "16-720B TAs"]
+__version__ = "1.0.1"
+__email__ = "heethesh@cmu.edu"
+
+# In-built modules
 import os
-import math
-import time
-import queue
 import multiprocessing
 
+# External modules
 import imageio
 import numpy as np
 import sklearn.metrics
 
+# Local python modules
 import util
 import visual_words
 
@@ -21,7 +33,7 @@ label_to_string = {0:'auditorium', 1:'baseball_field', 2:'desert',  3:'highway',
 
 def build_recognition_system(num_workers=2):
     '''
-    Creates a trained recognition system by generating training features from all training images.
+    Creates a trained recognition system by generating training features from all training images
 
     [input]
     * num_workers: number of workers to process in parallel
@@ -62,7 +74,7 @@ def build_recognition_system(num_workers=2):
 
 def evaluate_recognition_system(num_workers=2):
     '''
-    Evaluates the recognition system for all test images and returns the confusion matrix.
+    Evaluates the recognition system for all test images and returns the confusion matrix
 
     [input]
     * num_workers: number of workers to process in parallel
@@ -109,7 +121,19 @@ def evaluate_recognition_system(num_workers=2):
 
 def predict_image(file_path, dictionary, layer_num, K, features, train_labels):
     '''
-    TODO: Document this function
+    Predicts the label using the trained system and extracted VGG-16 features
+    This is a function run by a subprocess.
+
+    [input]
+    * file_path: path of image file
+    * dictionary: numpy.ndarray of shape (K, 3F)
+    * layer_num: number of spatial pyramid layers
+    * K: number of clusters for the word maps
+    * features: trained features using SPM
+    * train_labels: trained set of labels 
+    
+    [output]
+    * predicted_label: int representing the predicted label
     '''
 
     global PROGRESS
@@ -141,7 +165,7 @@ def get_image_feature(file_path, dictionary, layer_num, K):
     * K: number of clusters for the word maps
 
     [output]
-    * feature: numpy.ndarray of shape (K*(4^layer_num-1)/3))
+    * feature: numpy.ndarray of shape (K*(4^layer_num - 1)/3))
     '''
 
     global PROGRESS
@@ -164,8 +188,8 @@ def distance_to_set(word_hist, histograms):
     Compute similarity between a histogram of visual words with all training image histograms.
 
     [input]
-    * word_hist: numpy.ndarray of shape (K*(4^layer_num-1)/3))
-    * histograms: numpy.ndarray of shape (T, K*(4^layer_num-1)/3))
+    * word_hist: numpy.ndarray of shape (K*(4^layer_num - 1)/3))
+    * histograms: numpy.ndarray of shape (T, K*(4^layer_num - 1)/3))
 
     [output]
     * sim: numpy.ndarray of shape (T)
@@ -177,7 +201,14 @@ def distance_to_set(word_hist, histograms):
 
 def split_image(array, levels):
     '''
-    TODO: Document this
+    Splits a given input array into (4^(levels+1) - 1)/3 sub-arrays
+
+    [input]
+    * array: numpy.ndarray of shape (H, W)
+    * levels: number of spatial pyramid layers - 1 
+
+    [output]
+    * splits: numpy.ndarray of shape ((4^(levels+1) - 1)/3)
     '''
 
     # Level 0 returns original array
@@ -192,10 +223,13 @@ def split_image(array, levels):
 
 def compute_histogram(array, bins, normalize_pixels=None, disp=False):
     '''
-    TODO: Document
+    Computes the normalized histogram for a given image
+
     [input]
-    * wordmap: numpy.ndarray of shape (H, W)
-    * dict_size: dictionary size K
+    * array: numpy.ndarray of shape (H, W)
+    * bins: dictionary size K
+    * normalize_pixels: total number of pixels in the original wordmap
+    * disp: boolean to display the histogram
 
     [output]
     * hist: numpy.ndarray of shape (K)
@@ -238,7 +272,7 @@ def get_feature_from_wordmap_SPM(wordmap, layer_num, dict_size):
     * dict_size: dictionary size K
 
     [output]
-    * hist_all: numpy.ndarray of shape (K*(4^layer_num-1)/3)
+    * hist_all: numpy.ndarray of shape (K*(4^layer_num - 1)/3)
     '''
 
     # Parameters

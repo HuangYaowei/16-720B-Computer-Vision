@@ -1,4 +1,16 @@
+#!/usr/bin/python3
+
+'''
+16-720B Computer Vision (Fall 2018)
+Homework 1 - Spatial Pyramid Matching for Scene Classification
+'''
+
+__author__ = "16-720B TAs"
+__credits__ = ["Simon Lucey", "16-720B TAs"]
+__version__ = "1.0.1"
+
 import os
+
 andrew_id = 'hvhavlen'
 
 if ( os.path.isfile('../' + andrew_id + '/' + andrew_id + '/visual_words.py') and \

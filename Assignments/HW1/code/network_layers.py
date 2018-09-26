@@ -1,14 +1,28 @@
-import os
-import time
+#!/usr/bin/python3
 
+'''
+16-720B Computer Vision (Fall 2018)
+Homework 1 - Spatial Pyramid Matching for Scene Classification
+'''
+
+__author__ = "Heethesh Vhavle"
+__credits__ = ["Simon Lucey", "16-720B TAs"]
+__version__ = "1.0.1"
+__email__ = "heethesh@cmu.edu"
+
+# In-built modules
+import os
+
+# External modules
 import numpy as np
 import scipy.ndimage
 
+# Local python modules
 import util
 
 def extract_deep_feature(x, vgg16_weights):
     '''
-    Extracts deep features from the given VGG-16 weights.
+    Extracts deep features from the given VGG-16 weights
 
     [input]
     * x: numpy.ndarray of shape (H, W, 3)
@@ -21,7 +35,7 @@ def extract_deep_feature(x, vgg16_weights):
     # Run VGG-16 feature layers
     x = run_network_layers(x, vgg16_weights, 0, 31)
 
-    # Reshape output and flattenn it the PyTorch way!
+    # Reshape output and flatten it the PyTorch way (C, H, W)!
     x = np.swapaxes(np.swapaxes(x, 0, 2), 1, 2).flatten()
 
     # Run VGG-16 classifier layers
@@ -31,7 +45,7 @@ def extract_deep_feature(x, vgg16_weights):
 
 def run_network_layers(x, vgg16_weights, start, end):
     '''
-    Wrapper function for extract_deep_feature.
+    Wrapper function for extract_deep_feature
 
     [input]
     * x: numpy.ndarray of shape (H, W, 3)
@@ -59,7 +73,7 @@ def run_network_layers(x, vgg16_weights, start, end):
 
 def multichannel_conv2d(x, weight, bias):
     '''
-    Performs multi-channel 2D convolution.
+    Performs multi-channel 2D convolution
 
     [input]
     * x: numpy.ndarray of shape (H, W, input_dim)
@@ -78,7 +92,7 @@ def multichannel_conv2d(x, weight, bias):
             W = np.flip(weight[i, j, :, :])
             # 2D convolve on each input channel
             H.append(scipy.ndimage.convolve(x[:, :, j], W, cval=0.0, mode='constant'))
-        # Sum up all the convulution responses and the bias term
+        # Sum up all the convolution responses and the bias term
         y.append(sum(H) + bias[i])
 
     # Stack all filter responses back
@@ -87,7 +101,7 @@ def multichannel_conv2d(x, weight, bias):
 
 def relu(x):
     '''
-    Rectified linear unit.
+    Rectified linear unit
 
     [input]
     * x: numpy.ndarray
@@ -101,7 +115,7 @@ def relu(x):
 
 def max_pool2d(x, size):
     '''
-    2D max pooling operation.
+    2D max pooling operation
 
     [input]
     * x: numpy.ndarray of shape (H, W, input_dim)
@@ -129,7 +143,7 @@ def max_pool2d(x, size):
 
 def linear(x, W, b):
     '''
-    Fully-connected layer.
+    Fully-connected layer
 
     [input]
     * x: numpy.ndarray of shape (input_dim)

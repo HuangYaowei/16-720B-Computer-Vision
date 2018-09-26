@@ -1,5 +1,19 @@
+#!/usr/bin/python3
+
+'''
+16-720B Computer Vision (Fall 2018)
+Homework 1 - Spatial Pyramid Matching for Scene Classification
+'''
+
+__author__ = "Heethesh Vhavle"
+__credits__ = ["Simon Lucey", "16-720B TAs"]
+__version__ = "1.0.1"
+__email__ = "heethesh@cmu.edu"
+
+# In-built modules
 import multiprocessing
 
+# External modules
 import torch
 import torchvision
 import numpy as np
@@ -7,19 +21,19 @@ import matplotlib.pyplot as plt
 
 def get_num_CPU():
     '''
-    Counts the number of CPUs available in the machine.
+    Counts the number of CPUs available in the machine
     '''
     return multiprocessing.cpu_count()
 
 def get_VGG16_weights():
     '''
-    Returns the weights and meta-information of the VGG-16 network.
+    Returns the weights and meta-information of the VGG-16 network
 
     [output]
     * vgg16_weights: numpy.ndarray of shape (L, 3)
-        - The first column stores the type of network layer.
-        - If the type is "conv2d" or "linear",  the second and third column stores the weight and bias.
-        - If the type is "maxpool2d",  the second column stores the kernel size (assuming the same stride size).
+        - The first column stores the type of network layer
+        - If the type is "conv2d" or "linear", the second and third column stores the weight and bias
+        - If the type is "maxpool2d", the second column stores the kernel size (assuming the same stride size)
     '''
 
     vgg16 = torchvision.models.vgg16(pretrained=True)
@@ -45,6 +59,14 @@ def get_VGG16_weights():
     return vgg16_weights
 
 def display_histogram(hist, bins=100):
+    '''
+    Displays a numpy histogram
+
+    [input]
+    * hist: a numpy.ndarray of shape (K)
+    * bins: int of size (K)
+    '''
+
     fig, ax = plt.subplots()
     plt.bar(range(bins), hist)
     ax.set_xticks(range(bins))
@@ -53,10 +75,12 @@ def display_histogram(hist, bins=100):
     
 def display_image(image, close_on_keypress=False, cmap=None):
     '''
-    Displays an image.
+    Displays an image
 
     [input]
-    * image: a numpy.ndarray of shape (H,W,3F)
+    * image: a numpy.ndarray of shape (H, W, 3F)
+    * close_on_keypress: boolean to close the GUI on keypress
+    * cmap: str specifying the color map
     '''
     
     fig = plt.figure(1)
@@ -77,10 +101,10 @@ def display_image(image, close_on_keypress=False, cmap=None):
 
 def display_filter_responses(response_maps):
     '''
-    Visualizes the filter response maps.
+    Visualizes the filter response maps
 
     [input]
-    * response_maps: a numpy.ndarray of shape (H,W,3F)
+    * response_maps: a numpy.ndarray of shape (H, W, 3F)
     '''
     
     fig = plt.figure(1)

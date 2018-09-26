@@ -47,7 +47,7 @@ def build_recognition_system(num_workers=2):
     labels = np.asarray(train_data['labels'])
     file_paths = [ train_data['image_names'][i][0] for i in range(n_train) ]
 
-    # Multiprocess feature extraction setup
+    # Multiprocess feature extraction
     args = [ [file_path, dictionary, SPM_layer_num, K] for file_path in file_paths ]
     pool = multiprocessing.Pool(processes=num_workers)
     
@@ -78,33 +78,25 @@ def evaluate_recognition_system(num_workers=2):
     # Testing data
     test_data = np.load("../data/test_data.npz")
     test_labels = test_data['labels']
+    n_test = test_data['image_names'].shape[0]
+    file_paths = [ test_data['image_names'][i][0] for i in range(n_test) ]
 
     # Trained system data
     trained_system = np.load("trained_system.npz")
-
-    # Images and labels
-    n_test = test_data['image_names'].shape[0]
-    file_paths = [ test_data['image_names'][i][0] for i in range(n_test) ]
-    train_labels = trained_system['labels']
-    
-    # Trained features
     features = trained_system['features']
     dictionary = trained_system['dictionary']
+    train_labels = trained_system['labels']
     
     # Hyperparameters
     K = dictionary.shape[0]
     SPM_layer_num = int(trained_system['SPM_layer_num'])
 
-    # Multiprocess feature extraction setup
+    # Multiprocess feature extraction
     args = [ [file_path, dictionary, SPM_layer_num, K, features, train_labels] for file_path in file_paths ]
-    pool = multiprocessing.Pool(processes=num_workers)
-    
-    # Run predictions on all images
+    pool = multiprocessing.Pool(processes=num_workers)    
     predicted_labels = np.asarray(pool.starmap(predict_image, args))
     pool.close()
     pool.join()
-
-    np.save('predicted_labels', predicted_labels)
 
     # Evaluate the metrics
     confusion_matrix = sklearn.metrics.confusion_matrix(test_labels, predicted_labels)
@@ -134,7 +126,7 @@ def predict_image(file_path, dictionary, layer_num, K, features, train_labels):
     # Compute features using SPM
     word_hist = get_feature_from_wordmap_SPM(wordmap, layer_num, K)
 
-    # Find the predict label using histogram intersection similarity
+    # Find the predicted label using histogram intersection similarity
     predicted_label = train_labels[np.argmax(distance_to_set(word_hist, features))]
     return predicted_label
 

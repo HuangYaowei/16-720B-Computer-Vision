@@ -1,8 +1,9 @@
-import numpy as np
-# import torch
-# import torchvision
-import matplotlib.pyplot as plt
 import multiprocessing
+
+import torch
+import torchvision
+import numpy as np
+import matplotlib.pyplot as plt
 
 def get_num_CPU():
     '''
@@ -10,37 +11,38 @@ def get_num_CPU():
     '''
     return multiprocessing.cpu_count()
 
-# def get_VGG16_weights():
-#     '''
-#     Returns the weights and meta-information of the VGG-16 network.
+def get_VGG16_weights():
+    '''
+    Returns the weights and meta-information of the VGG-16 network.
 
-#     [output]
-#     * vgg16_weights: numpy.ndarray of shape (L,3)
-#                      The first column stores the type of network layer.
-#                      If the type is "conv2d" or "linear", the second and third column stores the weight and bias.
-#                      If the type is "maxpool2d", the second column stores the kernel size (assuming the same stride size).
-#     '''
+    [output]
+    * vgg16_weights: numpy.ndarray of shape (L, 3)
+        - The first column stores the type of network layer.
+        - If the type is "conv2d" or "linear",  the second and third column stores the weight and bias.
+        - If the type is "maxpool2d",  the second column stores the kernel size (assuming the same stride size).
+    '''
 
-#     vgg16 = torchvision.models.vgg16(pretrained=True)
-#     vgg16_weights = []
+    vgg16 = torchvision.models.vgg16(pretrained=True)
+    vgg16_weights = []
 
-#     for layer in vgg16.features:
-#         if isinstance(layer,torch.nn.Conv2d):
-#             l = ["conv2d",layer.weight.detach().numpy(),layer.bias.detach().numpy()]
-#         if isinstance(layer,torch.nn.ReLU):
-#             l = ["relu"]
-#         if isinstance(layer,torch.nn.MaxPool2d):
-#             l = ["maxpool2d",layer.kernel_size]
-#         vgg16_weights.append(l)
-#     for layer in vgg16.classifier:
-#         if isinstance(layer,torch.nn.Linear):
-#             l = ["linear",layer.weight.detach().numpy(),layer.bias.detach().numpy()]
-#         if isinstance(layer,torch.nn.ReLU):
-#             l = ["relu"]
-#         if isinstance(layer,torch.nn.Dropout): continue
-#         vgg16_weights.append(l)
+    for layer in vgg16.features:
+        if isinstance(layer, torch.nn.Conv2d):
+            l = ["conv2d", layer.weight.detach().numpy(), layer.bias.detach().numpy()]
+        if isinstance(layer, torch.nn.ReLU):
+            l = ["relu"]
+        if isinstance(layer, torch.nn.MaxPool2d):
+            l = ["maxpool2d", layer.kernel_size]
+        vgg16_weights.append(l)
 
-#     return vgg16_weights
+    for layer in vgg16.classifier:
+        if isinstance(layer, torch.nn.Linear):
+            l = ["linear", layer.weight.detach().numpy(), layer.bias.detach().numpy()]
+        if isinstance(layer, torch.nn.ReLU):
+            l = ["relu"]
+        if isinstance(layer, torch.nn.Dropout): continue
+        vgg16_weights.append(l)
+
+    return vgg16_weights
 
 def display_histogram(hist, bins=100):
     fig, ax = plt.subplots()

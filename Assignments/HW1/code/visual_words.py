@@ -39,6 +39,7 @@ def extract_filter_responses(image):
 
     [input]
     * image: numpy.ndarray of shape (H,W) or (H,W,3)
+    
     [output]
     * filter_responses: numpy.ndarray of shape (H,W,3F)
     '''

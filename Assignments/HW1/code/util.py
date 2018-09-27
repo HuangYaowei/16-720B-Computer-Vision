@@ -126,3 +126,26 @@ def save_wordmap(wordmap, filename):
     plt.axis('equal')
     plt.axis('off')
     plt.savefig(filename, bbox_inches='tight', pad_inches=0)
+
+
+def confusion_matrix_and_accuracy(true_labels, predicted_labels):
+    '''
+    Calculates the confusion matrix
+
+    [input]
+    * true_labels: numpy.ndarray of shape (T)
+    * predicted_labels: numpy.ndarray of shape (T)
+
+    [output]
+    * conf: confusion matrix numpy.ndarray of shape (C, C)
+    * accuracy: float value
+    '''
+
+    # Calculate the confusion matrix
+    conf = np.zeros((8, 8))
+    for true, pred in zip(true_labels, predicted_labels):
+        conf[true][pred] += 1
+
+    # Calculate accuracy
+    accuracy = (np.diag(conf).sum() / conf.sum())
+    return conf, accuracy

@@ -19,7 +19,6 @@ import scipy
 import torch
 import imageio
 import numpy as np
-import sklearn.metrics
 import skimage.transform
 import torchvision.transforms
 
@@ -112,8 +111,7 @@ def evaluate_recognition_system(vgg16, num_workers=2):
     pool.join()
 
     # Evaluate the metrics
-    confusion_matrix = sklearn.metrics.confusion_matrix(test_labels, predicted_labels)
-    accuracy_score = sklearn.metrics.accuracy_score(test_labels, predicted_labels)
+    confusion_matrix, accuracy_score = util.confusion_matrix_and_accuracy(test_labels, predicted_labels)
 
     print('Confusion Matrix:\n', confusion_matrix)
     print('Accuracy Score:', accuracy_score)

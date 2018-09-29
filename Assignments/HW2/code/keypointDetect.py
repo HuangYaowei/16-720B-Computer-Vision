@@ -29,7 +29,21 @@ def displayPyramid(im_pyramid):
         norm_type=cv2.NORM_MINMAX, dtype=cv2.CV_32F)
     
     cv2.imshow('Pyramid of image', im_pyramid)
-    cv2.waitKey(0)
+    while (cv2.waitKey(33) != 27): pass
+    cv2.destroyAllWindows()
+
+def displayImage(img, title='Image'):
+    # Single image
+    if type(img) == np.ndarray:
+        cv2.namedWindow(title, cv2.WINDOW_NORMAL)
+        cv2.imshow(title, img)
+        cv2.resizeWindow(title, 500, 500)
+
+    # Multiple images
+    else: 
+        for i, im in enumerate(img): cv2.imshow(title + str(i), im)
+
+    while (cv2.waitKey(33) != 27): pass
     cv2.destroyAllWindows()
 
 def createDoGPyramid(gaussian_pyramid, levels=[-1, 0, 1, 2, 3, 4]):
@@ -48,7 +62,7 @@ def createDoGPyramid(gaussian_pyramid, levels=[-1, 0, 1, 2, 3, 4]):
 
     # Create DoG pyramid
     DoG_pyramid = []
-    for i in range len(levels - 1):
+    for i in range(len(levels) - 1):
         DoG_pyramid.append(gaussian_pyramid[:, :, i+1] - gaussian_pyramid[:, :, i])
     DoG_pyramid = np.stack(DoG_pyramid, axis=-1)    
 
@@ -58,7 +72,7 @@ def createDoGPyramid(gaussian_pyramid, levels=[-1, 0, 1, 2, 3, 4]):
 
 def computePrincipalCurvature(DoG_pyramid):
     '''
-    Takes in DoGPyramid generated in createDoGPyramid and returns
+    Takes in DoG Pyramid generated in createDoGPyramid and returns
     PrincipalCurvature,a matrix of the same size where each point contains the
     curvature ratio R for the corre-sponding point in the DoG pyramid
     
@@ -69,35 +83,96 @@ def computePrincipalCurvature(DoG_pyramid):
     * principal_curvature - size (imH, imW, len(levels) - 1) matrix where each 
     point contains the curvature ratio R for the corresponding point in the DoG pyramid
     '''
-    
-    principal_curvature = None
- 
 
+    height, width, channels = DoG_pyramid.shape
+    principal_curvature = []
+
+    for i in range(channels):
+        img = DoG_pyramid[:, :, i]
+
+        # First derivatives
+        dx = cv2.Sobel(img, ddepth=-1, dx=1, dy=0)
+        dy = cv2.Sobel(img, ddepth=-1, dx=0, dy=1)
+
+        # Second derivatives
+        dxx = cv2.Sobel(dx, ddepth=-1, dx=1, dy=0)
+        dyy = cv2.Sobel(dy, ddepth=-1, dx=0, dy=1)
+        dxy = cv2.Sobel(dx, ddepth=-1, dx=0, dy=1)
+
+        R = np.zeros((height, width))
+        for r in range(height):
+            for c in range(width):
+                H = np.asarray([[dxx[r, c], dxy[r, c]], [dxy[r, c], dyy[r, c]]])
+                R[r, c] = (np.trace(H)**2)/np.linalg.det(H)
+        principal_curvature.append(R)
+
+    principal_curvature = np.dstack(principal_curvature)
     return principal_curvature
 
 def getLocalExtrema(DoG_pyramid, DoG_levels, principal_curvature, th_contrast=0.03, th_r=12):
     '''
-    Returns local extrema points in both scale and space using the DoGPyramid
+    Returns local extrema points in both scale and space using the DoG Pyramid
 
     [input]
     * DoG_pyramid - size (imH, imW, len(levels) - 1) matrix of the DoG pyramid
     * DoG_levels - The levels of the pyramid where the blur at each level is outputs
     * principal_curvature - size (imH, imW, len(levels) - 1) matrix contains the curvature ratio R
-    * th_contrast - remove any point that is a local extremum but does not have a
+    * th_contrast - Remove any point that is a local extremum but does not have a
     DoG response magnitude above this threshold
-    * th_r - remove any edge-like points that have too large a principal curvature ratio
+    * th_r - Remove any edge-like points that have too large a principal curvature ratio
      
     [output]
     * locsDoG - N x 3 matrix where the DoG pyramid achieves a local extrema in both
     scale and space, and also satisfies the two thresholds
     '''
     
-    locsDoG = None
-   
-
-
-    return locsDoG
+    H, W, C = DoG_pyramid.shape
+    locsDoG = []
+    kernel = 3
     
+    for level in range(1, C-1):
+        for x in range(0, H-kernel+1):
+            for y in range(0, W-kernel+1):
+                # Current pixel or center pixel of the kernel
+                cx, cy = (2*x + kernel-1)//2, (2*y + kernel-1)//2
+                
+                # Compare principal curvature ratio
+                if abs(principal_curvature[cx, cy, level]) > th_r: continue
+                
+                # Get scale-space neighbours
+                neighbours = DoG_pyramid[x:x+kernel, y:y+kernel, level-1:level+2]
+                
+                # Extrema positions
+                arg_max = np.unravel_index(np.argmax(neighbours), neighbours.shape) + np.asarray((x, y, level-1))
+                arg_min = np.unravel_index(np.argmin(neighbours), neighbours.shape) + np.asarray((x, y, level-1))
+                
+                # Check if current pixel is an extrema
+                if ((arg_max[0] != cx) and (arg_max[1] != cy) and (arg_max[2] != level)) \
+                or ((arg_min[0] != cx) and (arg_min[1] != cy) and (arg_min[2] != level)): continue
+
+                # Compare contrast ratio
+                if (not abs(DoG_pyramid[cx, cy, level]) > th_contrast): continue
+
+                # Add this point of interest
+                # TODO: Swap x and y??
+                locsDoG.append([cx, cy, level])
+
+    locsDoG = np.asarray(locsDoG)
+    print(locsDoG.shape)
+    return locsDoG
+
+def displayPoints(img, locsDoG):
+    # Resize for better display
+    factor = 10
+    img = cv2.resize(img, None, fx=factor, fy=factor)
+    
+    # Draw the interest points
+    for x, y, level in locsDoG:
+        color = (int(level==1)*255, int(level==2)*255, int(level==3)*255)
+        img = cv2.circle(img, (y*factor, x*factor), factor, (0, 255, 0), -1)
+    
+    displayImage(img)
+
 def DoGdetector(im, sigma0=1, k=np.sqrt(2), levels=[-1, 0, 1, 2, 3, 4], th_contrast=0.03, th_r=12):
     '''
     Putting it all together
@@ -132,6 +207,7 @@ def DoGdetector(im, sigma0=1, k=np.sqrt(2), levels=[-1, 0, 1, 2, 3, 4], th_contr
 if __name__ == '__main__':
     levels = [-1, 0, 1, 2, 3, 4]
     im = cv2.imread('../data/model_chickenbroth.jpg')
+    # im = cv2.imread('../data/chickenbroth_01.jpg')
     
     # Test gaussian pyramid
     im_pyr = createGaussianPyramid(im)
@@ -140,18 +216,20 @@ if __name__ == '__main__':
     # Test DoG pyramid
     DoG_pyr, DoG_levels = createDoGPyramid(im_pyr, levels)
     print(DoG_pyr.shape, DoG_levels)
-    displayPyramid(DoG_pyr)
-
-    sys.exit(0)
+    # displayPyramid(DoG_pyr)
     
     # Test compute principal curvature
     pc_curvature = computePrincipalCurvature(DoG_pyr)
-    displayPyramid(pc_curvature)
+    print(pc_curvature.shape)
+    # displayPyramid(pc_curvature)
     
     # Test get local extrema
     th_contrast = 0.03
     th_r = 12
     locsDoG = getLocalExtrema(DoG_pyr, DoG_levels, pc_curvature, th_contrast, th_r)
+    displayPoints(im, locsDoG)
+
+    sys.exit(0)
     
     # Test DoG detector
     locsDoG, gaussian_pyramid = DoGdetector(im)

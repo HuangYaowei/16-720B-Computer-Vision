@@ -1,84 +1,90 @@
-import numpy as np
-import cv2
 import os
+import sys
+
+import cv2
+import numpy as np
+import matplotlib.pyplot as plt
 from scipy.spatial.distance import cdist
+
 from keypointDetect import DoGdetector
 
-import matplotlib.pyplot as plt
-
+TEST_PATTERN_FILE = '../results/testPattern.npy'
 
 def makeTestPattern(patch_width=9, nbits=256):
     '''
     Creates Test Pattern for BRIEF
-
     Run this routine for the given parameters patch_width = 9 and n = 256
 
-    INPUTS
-    patch_width - the width of the image patch (usually 9)
-    nbits      - the number of tests n in the BRIEF descriptor
+    [input]
+    * patch_width - Width of the image patch (usually 9)
+    * nbits - Number of tests n in the BRIEF descriptor
 
-    OUTPUTS
-    compareX and compareY - LINEAR indices into the patch_width x patch_width image 
-                            patch and are each (nbits,) vectors. 
+    [output]
+    * compareX and compareY - Linear indices into the patch_width x patch_width
+      image patch and are each (nbits,) vectors. 
     '''
-    #############################
-    # TO DO ...
-    # Generate testpattern here
+    
+    # compareX = np.random.randint(patch_width, size=(nbits//2, 2)).flatten()
+    # compareY = np.random.randint(patch_width, size=(nbits//2, 2)).flatten()
+
+    compareX = np.clip(np.random.normal(patch_width//2, 2, (nbits, 2)).round().astype('int'), 0, patch_width-1)
+    compareY = np.clip(np.random.normal(patch_width//2, 2, (nbits, 2)).round().astype('int'), 0, patch_width-1)
+
     return  compareX, compareY
 
-# load test pattern for Brief
-test_pattern_file = '../results/testPattern.npy'
-if os.path.isfile(test_pattern_file):
-    # load from file if exists
-    compareX, compareY = np.load(test_pattern_file)
-else:
-    # produce and save patterns if not exist
-    compareX, compareY = makeTestPattern()
-    if not os.path.isdir('../results'):
-        os.mkdir('../results')
-    np.save(test_pattern_file, [compareX, compareY])
+def computeBrief(im, gaussian_pyramid, locsDoG, k, levels, compareX, compareY):
+    '''
+    Compute BRIEF features
+    
+    [input]
+    * locsDoG - locsDoG are the keypoint locations returned by the DoG detector
+    * levels  - Gaussian scale levels that were given in Section 1
+    * compareX and compareY - Linear indices into the (patch_width x patch_width)
+      image patch and are each (nbits,) vectors
 
-def computeBrief(im, gaussian_pyramid, locsDoG, k, levels,
-    compareX, compareY):
+    [output]
+    * locs - An m x 3 vector, where the first two columns are the image coordinates
+      of keypoints and the third column is the pyramid level of the keypoints
+    * desc - An m x n bits matrix of stacked BRIEF descriptors. m is the number of
+      valid descriptors in the image and will vary
     '''
-    Compute Brief feature
-     INPUT
-     locsDoG - locsDoG are the keypoint locations returned by the DoG
-               detector.
-     levels  - Gaussian scale levels that were given in Section1.
-     compareX and compareY - linear indices into the 
-                             (patch_width x patch_width) image patch and are
-                             each (nbits,) vectors.
+
+    patch_width = 9
+    locs, desc = [], []
+
+    # (fx, fy) are interest points at a given level
+    for fx, fy, level in locsDoG:
+        # Get a patch of size (patch_width x patch_width)
+        patch = gaussian_pyramid[fx-patch_width//2:fx+1+patch_width//2, fy-patch_width//2:fy+1+patch_width//2, level]
+        
+        # Check if it's possible to create a patch
+        if patch.shape != (patch_width, patch_width): continue
+        locs.append([fx, fy, level])
+        
+        # (tx, ty) are test points for the patch
+        desc.append([ 1 if patch[tx[0], tx[1]] < patch[ty[0], ty[1]] else 0 for tx, ty in zip(compareX, compareY) ])
     
-    
-     OUTPUT
-     locs - an m x 3 vector, where the first two columns are the image
-    		 coordinates of keypoints and the third column is the pyramid
-            level of the keypoints.
-     desc - an m x n bits matrix of stacked BRIEF descriptors. m is the number
-            of valid descriptors in the image and will vary.
-    '''
-    ##############################
-    # TO DO ...
-    # compute locs, desc here
+    locs = np.asarray(locs)
+    desc = np.asarray(desc)
     return locs, desc
-
-
 
 def briefLite(im):
     '''
-    INPUTS
-    im - gray image with values between 0 and 1
+    [input]
+    * im - Gray image with values between 0 and 1
 
-    OUTPUTS
-    locs - an m x 3 vector, where the first two columns are the image coordinates 
-            of keypoints and the third column is the pyramid level of the keypoints
-    desc - an m x n bits matrix of stacked BRIEF descriptors. 
-            m is the number of valid descriptors in the image and will vary
-            n is the number of bits for the BRIEF descriptor
+    [output]
+    * locs - An m x 3 vector, where the first two columns are the image coordinates
+      of keypoints and the third column is the pyramid level of the keypoints
+    * desc - An m x n bits matrix of stacked BRIEF descriptors
+        - m is the number of valid descriptors in the image and will vary
+        - n is the number of bits for the BRIEF descriptor
     '''
-    ###################
-    # TO DO ...
+
+    locsDoG, gaussian_pyramid = DoGdetector(im)
+    locs, desc = computeBrief(im, gaussian_pyramid, locsDoG, np.sqrt(2), 
+        [-1, 0, 1, 2, 3, 4], compareX, compareY)
+
     return locs, desc
 
 def briefMatch(desc1, desc2, ratio=0.8):
@@ -121,25 +127,34 @@ def plotMatches(im1, im2, matches, locs1, locs2):
         plt.plot(x,y,'r')
         plt.plot(x,y,'g.')
     plt.show()
-    
-    
 
-if __name__ == '__main__':
-    # test makeTestPattern
+# Test pattern for BRIEF
+if os.path.isfile(TEST_PATTERN_FILE):
+    print('Loading test pattern from file...')
+    compareX, compareY = np.load(TEST_PATTERN_FILE)
+else:
+    print('Generating new test pattern...')
     compareX, compareY = makeTestPattern()
-    # test briefLite
+    if not os.path.isdir('../results'): os.mkdir('../results')
+    np.save(TEST_PATTERN_FILE, [compareX, compareY])
+    
+if __name__ == '__main__':
+    # compareX, compareY = makeTestPattern()
+
     im = cv2.imread('../data/model_chickenbroth.jpg')
     locs, desc = briefLite(im)  
-    fig = plt.figure()
-    plt.imshow(cv2.cvtColor(im, cv2.COLOR_BGR2GRAY), cmap='gray')
-    plt.plot(locs[:,0], locs[:,1], 'r.')
-    plt.draw()
-    plt.waitforbuttonpress(0)
-    plt.close(fig)
+    
+    # fig = plt.figure()
+    # plt.imshow(cv2.cvtColor(im, cv2.COLOR_BGR2GRAY), cmap='gray')
+    # plt.plot(locs[:,0], locs[:,1], 'r.')
+    # plt.draw()
+    # plt.waitforbuttonpress(0)
+    # plt.close(fig)
+    
     # test matches
     im1 = cv2.imread('../data/model_chickenbroth.jpg')
     im2 = cv2.imread('../data/chickenbroth_01.jpg')
     locs1, desc1 = briefLite(im1)
     locs2, desc2 = briefLite(im2)
     matches = briefMatch(desc1, desc2)
-    plotMatches(im1,im2,matches,locs1,locs2)
+    plotMatches(im1, im2, matches, locs1, locs2)

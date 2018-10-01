@@ -147,11 +147,9 @@ def getLocalExtrema(DoG_pyramid, DoG_levels, principal_curvature, th_contrast=0.
                 if (not abs(DoG_pyramid[x, y, level]) > th_contrast): continue
 
                 # Add this point of interest
-                # TODO: Swap x and y??
-                locsDoG.append([x, y, level])
+                locsDoG.append([y, x, level])
 
     locsDoG = np.asarray(locsDoG)
-    print(locsDoG.shape)
     return locsDoG
 
 def displayPoints(img, locsDoG, factor=10, fname=None):
@@ -161,7 +159,7 @@ def displayPoints(img, locsDoG, factor=10, fname=None):
     # Draw the interest points
     for x, y, level in locsDoG:
         color = (int(level==1)*255, int(level==2)*255, int(level==3)*255)
-        img = cv2.circle(img, (y*factor, x*factor), factor, (0, 255, 0), -1)
+        img = cv2.circle(img, (x*factor, y*factor), factor, (0, 255, 0), -1)
     
     if fname: cv2.imwrite(fname, img)
     displayImage(img)
@@ -197,7 +195,7 @@ def DoGdetector(im, sigma0=1, k=np.sqrt(2), levels=[-1, 0, 1, 2, 3, 4], th_contr
     locsDoG = getLocalExtrema(DoG_pyr, DoG_levels, pc_curvature, th_contrast, th_r)
 
     # Display the points
-    displayPoints(im, locsDoG)
+    # displayPoints(im, locsDoG)
 
     return locsDoG, gauss_pyramid
 

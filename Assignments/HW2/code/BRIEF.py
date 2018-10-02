@@ -24,13 +24,21 @@ def makeTestPattern(patch_width=9, nbits=256):
       image patch and are each (nbits,) vectors. 
     '''
     
-    # compareX = np.random.randint(patch_width, size=(nbits//2, 2)).flatten()
-    # compareY = np.random.randint(patch_width, size=(nbits//2, 2)).flatten()
+    # Random
+    # compareX = np.random.randint(patch_width, size=(nbits))
+    # compareY = np.random.randint(patch_width, size=(nbits))
 
-    compareX = np.clip(np.random.normal(patch_width//2, 2, (nbits, 2)).round().astype('int'), 0, patch_width-1)
-    compareY = np.clip(np.random.normal(patch_width//2, 2, (nbits, 2)).round().astype('int'), 0, patch_width-1)
+    # Generation andom gaussian distribution spatially
+    mean, std = patch_width//2, patch_width/5
+    linear_indices = np.arange(0, patch_width*patch_width).reshape(patch_width, patch_width)
+    X_gauss_indices = np.clip(np.random.normal(mean, std, (nbits, 2)).round().astype('int'), 0, patch_width-1)
+    Y_gauss_indices = np.clip(np.random.normal(mean, std, (nbits, 2)).round().astype('int'), 0, patch_width-1)
 
-    return  compareX, compareY
+    # Linearise the indices
+    compareX = np.asarray([ linear_indices[xy[0], xy[1]] for xy in X_gauss_indices ])
+    compareY = np.asarray([ linear_indices[xy[0], xy[1]] for xy in Y_gauss_indices ])
+
+    return compareX, compareY
 
 def computeBrief(im, gaussian_pyramid, locsDoG, k, levels, compareX, compareY):
     '''
@@ -55,17 +63,18 @@ def computeBrief(im, gaussian_pyramid, locsDoG, k, levels, compareX, compareY):
     # (fx, fy) are interest points at a given level
     for fx, fy, level in locsDoG:
         # Get a patch of size (patch_width x patch_width)
-        patch = gaussian_pyramid[fx-patch_width//2:fx+1+patch_width//2, fy-patch_width//2:fy+1+patch_width//2, level]
+        patch = gaussian_pyramid[fy-patch_width//2:fy+1+patch_width//2, fx-patch_width//2:fx+1+patch_width//2, level].flatten()
         
         # Check if it's possible to create a patch
-        if patch.shape != (patch_width, patch_width): continue
+        if patch.shape[0] != (patch_width * patch_width): continue
         locs.append([fx, fy, level])
         
-        # (tx, ty) are test points for the patch
-        desc.append([ 1 if patch[tx[0], tx[1]] < patch[ty[0], ty[1]] else 0 for tx, ty in zip(compareX, compareY) ])
+        # tx, ty are test points for the patch
+        desc.append([ 1 if patch[tx] < patch[ty] else 0 for tx, ty in zip(compareX, compareY) ])
     
     locs = np.asarray(locs)
     desc = np.asarray(desc)
+    print(locs.shape, desc.shape)
     return locs, desc
 
 def briefLite(im):
@@ -129,20 +138,21 @@ def plotMatches(im1, im2, matches, locs1, locs2):
     plt.show()
 
 # Test pattern for BRIEF
-if os.path.isfile(TEST_PATTERN_FILE):
-    print('Loading test pattern from file...')
-    compareX, compareY = np.load(TEST_PATTERN_FILE)
-else:
-    print('Generating new test pattern...')
-    compareX, compareY = makeTestPattern()
-    if not os.path.isdir('../results'): os.mkdir('../results')
-    np.save(TEST_PATTERN_FILE, [compareX, compareY])
+# if os.path.isfile(TEST_PATTERN_FILE):
+#     print('Loading test pattern from file...')
+#     compareX, compareY = np.load(TEST_PATTERN_FILE)
+# else:
+#     print('Generating new test pattern...')
+#     compareX, compareY = makeTestPattern()
+#     if not os.path.isdir('../results'): os.mkdir('../results')
+#     np.save(TEST_PATTERN_FILE, [compareX, compareY])
     
 if __name__ == '__main__':
     # compareX, compareY = makeTestPattern()
+    # sys.exit(0)
 
-    im = cv2.imread('../data/model_chickenbroth.jpg')
-    locs, desc = briefLite(im)  
+    # im = cv2.imread('../data/model_chickenbroth.jpg')
+    # locs, desc = briefLite(im)  
     
     # fig = plt.figure()
     # plt.imshow(cv2.cvtColor(im, cv2.COLOR_BGR2GRAY), cmap='gray')

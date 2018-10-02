@@ -28,13 +28,13 @@ def makeTestPattern(patch_width=9, nbits=256):
     # compareX = np.random.randint(patch_width, size=(nbits))
     # compareY = np.random.randint(patch_width, size=(nbits))
 
-    # Generation andom gaussian distribution spatially
+    # Generation random gaussian distribution spatially
     mean, std = patch_width//2, patch_width/5
     linear_indices = np.arange(0, patch_width*patch_width).reshape(patch_width, patch_width)
     X_gauss_indices = np.clip(np.random.normal(mean, std, (nbits, 2)).round().astype('int'), 0, patch_width-1)
     Y_gauss_indices = np.clip(np.random.normal(mean, std, (nbits, 2)).round().astype('int'), 0, patch_width-1)
 
-    # Linearise the indices
+    # Linearize the indices
     compareX = np.asarray([ linear_indices[xy[0], xy[1]] for xy in X_gauss_indices ])
     compareY = np.asarray([ linear_indices[xy[0], xy[1]] for xy in Y_gauss_indices ])
 
@@ -74,7 +74,6 @@ def computeBrief(im, gaussian_pyramid, locsDoG, k, levels, compareX, compareY):
     
     locs = np.asarray(locs)
     desc = np.asarray(desc)
-    print(locs.shape, desc.shape)
     return locs, desc
 
 def briefLite(im):
@@ -138,14 +137,14 @@ def plotMatches(im1, im2, matches, locs1, locs2):
     plt.show()
 
 # Test pattern for BRIEF
-# if os.path.isfile(TEST_PATTERN_FILE):
-#     print('Loading test pattern from file...')
-#     compareX, compareY = np.load(TEST_PATTERN_FILE)
-# else:
-#     print('Generating new test pattern...')
-#     compareX, compareY = makeTestPattern()
-#     if not os.path.isdir('../results'): os.mkdir('../results')
-#     np.save(TEST_PATTERN_FILE, [compareX, compareY])
+if os.path.isfile(TEST_PATTERN_FILE):
+    print('Loading test pattern from file...')
+    compareX, compareY = np.load(TEST_PATTERN_FILE)
+else:
+    print('Generating new test pattern...')
+    compareX, compareY = makeTestPattern()
+    if not os.path.isdir('../results'): os.mkdir('../results')
+    np.save(TEST_PATTERN_FILE, [compareX, compareY])
     
 if __name__ == '__main__':
     # compareX, compareY = makeTestPattern()

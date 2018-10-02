@@ -1,9 +1,6 @@
 import numpy as np
 import cv2
 
-# TODO: Remove
-import sys
-
 def createGaussianPyramid(im, sigma0=1, k=np.sqrt(2), levels=[-1, 0, 1, 2, 3, 4]):
     # Convert RGB to grayscale
     if len(im.shape) == 3:
@@ -99,13 +96,9 @@ def computePrincipalCurvature(DoG_pyramid):
         dyy = cv2.Sobel(dy, ddepth=-1, dx=0, dy=1)
         dxy = cv2.Sobel(dx, ddepth=-1, dx=0, dy=1)
 
-        R = np.zeros((height, width))
-        for r in range(height):
-            for c in range(width):
-                H = np.asarray([[dxx[r, c], dxy[r, c]], [dxy[r, c], dyy[r, c]]])
-                R[r, c] = (np.trace(H)**2)/np.linalg.det(H)
-        principal_curvature.append(R)
-
+        # Calculate principal curvature matrix
+        principal_curvature.append((dxx + dyy)**2/(dxx*dyy - dxy**2))
+        
     principal_curvature = np.dstack(principal_curvature)
     return principal_curvature
 
@@ -202,7 +195,7 @@ def DoGdetector(im, sigma0=1, k=np.sqrt(2), levels=[-1, 0, 1, 2, 3, 4], th_contr
 if __name__ == '__main__':
     levels = [-1, 0, 1, 2, 3, 4]
     im = cv2.imread('../data/model_chickenbroth.jpg')
-    
+
     '''
     # Test gaussian pyramid
     im_pyr = createGaussianPyramid(im)

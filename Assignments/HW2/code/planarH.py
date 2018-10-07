@@ -1,7 +1,7 @@
 import numpy as np
 import cv2
 
-from BRIEF import briefLite, briefMatch
+from BRIEF import briefLite, briefMatch, plotMatches
 from keypointDetect import displayPoints
 
 def computeH(p1, p2):
@@ -33,42 +33,45 @@ def ransacH(matches, locs1, locs2, num_iter=5000, tol=2):
     Returns the best homography by computing the best set of matches using RANSAC
 
     [input]
-    * locs1 and locs2 - Matrices specifying point locations in each of the images
     * matches - Matrix specifying matches between these two sets of point locations
-    * nIter - Number of iterations to run RANSAC
+    * locs1 and locs2 - Matrices specifying point locations in each of the images
+    * num_iter - Number of iterations to run RANSAC
     * tol - Tolerance value for considering a point to be an inlier
 
     [output]
     * bestH - Homography matrix with the most inliers found during RANSAC
     ''' 
 
+    n_matches = matches.shape[0]
+
     p1, p2 = [], []
-    for i in range(matches.shape[0]):
+    for i in range(n_matches):
         p1.append(locs1[matches[i, 0], 0:2])
         p2.append(locs2[matches[i, 1], 0:2])
 
     p1 = np.asarray(p1).swapaxes(0, 1)
     p2 = np.asarray(p2).swapaxes(0, 1)
 
-    ng = 4
-    np.random.seed(0)
-    groups = np.random.permutation(np.arange(0, p1.shape[1]))
-    if p1.shape[1]%ng: groups = np.concatenate(groups, np.random.randint(p1.shape[1], size=p1.shape[1]%ng))
+    # RANSAC
+    bestH, most_inliers = None, 0
+    best_args = None
+    for i in range(num_iter):
+        random_indices = np.random.randint(n_matches, size=4)
+        H = computeH(p1[:, random_indices], p2[:, random_indices])
 
-    for i in range(groups.shape[0]//ng):
-        H = computeH(p1[:, i:i+ng], p2[:, i:i+ng])
+        point1 = np.vstack((p1, [1]*n_matches))
+        point2 = np.vstack((p2, [1]*n_matches))
+        point2_proj = np.matmul(H, point1)
+        point2_proj = point2_proj/point2_proj[-1, :]
+        
+        # distances = np.sqrt(np.sum((point2_proj.T - point2.T)**2, axis=1))
+        distances = np.linalg.norm(point2_proj.T - point2.T, axis=1)
+        inliers = len(distances[distances<tol])
+        
+        # TODO: Remove args
+        args = [ k for k in range(n_matches) if distances[k] < tol ]
+        if inliers > most_inliers: bestH, most_inliers, best_args = H, inliers, args
 
-    a = np.vstack((p1[:, :4], [1]*4))
-    b = np.vstack((p2[:, :4], [1]*4))
-    
-    print(a, a.shape)
-    print(b, b.shape)
-    print(H)
-    
-    dst = np.matmul(H, a, dst)
-    print(dst/dst[-1, :])
-
-    bestH = None
     return bestH
 
 if __name__ == '__main__':
@@ -80,7 +83,8 @@ if __name__ == '__main__':
     # matches = briefMatch(desc1, desc2)
     
     locs1, locs2, desc1, desc2, matches = np.load('BRIEF-ch.npy')
-    ret = ransacH(matches, locs1, locs2, num_iter=5000, tol=2)
+    H = ransacH(matches, locs1, locs2, num_iter=5000, tol=2)
     
-    # print(len(matches))
+    # matches = matches[args]
+    # plotMatches(im1, im2, matches, locs1, locs2)
     # displayPoints(im2, ret)

@@ -10,46 +10,100 @@ from BRIEF import briefLite, briefMatch, plotMatches
 
 def imageStitching(im1, im2, H2to1):
     '''
-    Returns a panorama of im1 and im2 using the given 
-    homography matrix
+    Returns a panorama of im1 and im2 using the given homography matrix
 
-    INPUT
-        Warps img2 into img1 reference frame using the provided warpH() function
-        H2to1 - a 3 x 3 matrix encoding the homography that best matches the linear
-                 equation
-    OUTPUT
-        Blends img1 and warped img2 and outputs the panorama image
+    [input]
+    * Warps img2 into img1 reference frame using the provided warpH() function
+    * H2to1 - A 3 x 3 matrix encoding the homography that best matches the linear equation
+
+    [output]
+    * pano_im - Blends img1 and warped img2 and outputs the panorama image
     '''
-
-    H1to2 = np.linalg.inv(H2to1)
-    H1to2 = H1to2/H1to2[-1, -1]
     
-    top_left = np.matmul(H1to2, np.asarray([0, 0, 1]))
-    bottom_right = np.matmul(H1to2, np.asarray([im2.shape[1], im2.shape[0], 1]))
-    bottom_right = bottom_right/bottom_right[-1]
-    
-    # offsetx = abs(int(top_left[0]))
-    # offsety = abs(int(top_left[1]))
-    # dsize = (int(bottom_right[0]) + offsetx, int(bottom_right[1]) + offsety)
+    # Arbitrary output size
+    output_size = (1750, 700)
 
-    print(top_left, bottom_right)
-    pano_im = cv2.warpPerspective(im2, H1to2, dsize=(2000, 1000))
-    pano_im[0:im1.shape[0], 0:im1.shape[1]] = im1
+    # Warp the image and combine the panorama without clipping correction
+    im1_warp = cv2.warpPerspective(im1, np.eye(3), dsize=output_size)
+    im2_warp = cv2.warpPerspective(im2, H2to1, dsize=output_size)
 
-
-     # = cv2.warpPerspective(im1, H2to1, dsize=(1000, 1500))
-
-    # pano_im = cv2.warpPerspective(im2, H2to1, (im2.shape[1] + im1.shape[1], im2.shape[0]))
-    # pano_im[0:im1.shape[0], 0:im1.shape[1]] = im1
-
+    # Blend the images to form the panorama
+    pano_im = np.maximum(im1_warp, im2_warp)
     return pano_im
 
 def imageStitching_noClip(im1, im2, H2to1):
     '''
-    Returns a panorama of im1 and im2 using the given 
-    homography matrix without cliping.
+    Returns a panorama of im1 and im2 using the given homography matrix without clipping
+
+    [input]
+    * Warps img2 into img1 reference frame using the provided warpH() function
+    * H2to1 - A 3 x 3 matrix encoding the homography that best matches the linear equation
+    
+    [output]
+    * pano_im - Blends img1 and warped img2 and outputs the panorama image without clipping
     ''' 
 
+    # Required output width
+    output_width = 2000
+
+    # Collect the corner points of the warped image
+    corners = np.asarray([[0, 0, 1], [0, im2.shape[0]-1, 1], [im2.shape[1]-1, 0, 1], [im2.shape[1]-1, im2.shape[0]-1, 1]]).T
+    corners = np.matmul(H2to1, corners)
+    corners = (corners/corners[-1, :]).astype('int').T
+
+    # Find the translation offset and maximum coordinates of the warped image
+    minXY = np.min(corners, axis=0)[:2]
+    maxXY = np.max(corners, axis=0)[:2]
+    offset = np.asarray([ -i if i<0 else 0 for i in minXY ])
+
+    # Compute the output size, aspect ratio and the required scaling
+    output_size = (maxXY[0] + offset[0], maxXY[1] + offset[1])
+    aspect_ratio = output_size[1]/output_size[0]
+    scale = (output_width * aspect_ratio)/output_size[1]
+
+    # Update the offset and output size with the scaling factor
+    offset = (offset * scale).astype('int')
+    output_size = (int(output_size[0] * scale), int(output_size[1] * scale))
+
+    # Create the panorama by warping with the H and M matrices
+    M = np.asarray([[scale, 0, offset[0]], [0, scale, offset[1]], [0, 0, 1]]).astype('float')
+    im1_warp = cv2.warpPerspective(im1, M, dsize=output_size)
+    im2_warp = cv2.warpPerspective(im2, np.matmul(M, H2to1), dsize=output_size)
+    
+    # Blend the images to form the panorama
+    pano_im = np.maximum(im1_warp, im2_warp)
+    return pano_im
+
+def generatePanorama(im1, im2):
+    '''
+    Accepts two images as input, computes keypoints and descriptors for 
+    both the images, finds putative feature correspondences by matching keypoint
+    descriptors, estimates a homography using RANSAC and then warps one of the
+    images with the homography so that they are aligned and then overlays them
+
+    [input]
+    * im1 - Input image 1
+    * im2 - Input image 2
+
+    [output]
+    * pano_im - Output panorama image
+    '''
+
+    # Compute keypoints and descriptors
+    print('Computing feature descriptors for im1...')
+    locs1, desc1 = briefLite(im1)
+
+    print('Computing feature descriptors for im2...')
+    locs2, desc2 = briefLite(im2)
+    
+    # Match keypoint descriptors
+    matches = briefMatch(desc1, desc2)
+
+    # Estimate homography
+    H2to1 = ransacH(matches, locs1, locs2, num_iter=5000, tol=2)
+
+    # Align and blend the images to form the panorama
+    pano_im = imageStitching_noClip(im1, im2, H2to1)
     return pano_im
 
 if __name__ == '__main__':
@@ -66,15 +120,13 @@ if __name__ == '__main__':
     
     # np.save('incline', [locs1, locs2, desc1, desc2, matches])
     locs1, locs2, desc1, desc2, matches = np.load('incline.npy')
+    # plotMatches(im1, im2, matches, locs1, locs2)
 
-    # plotMatches(im1,im2,matches,locs1,locs2)
-    # H2to1 = ransacH(matches, locs1, locs2, num_iter=5000, tol=2)
-    # np.save('H2to1', H2to1)
-    H2to1 = np.load('H2to1.npy')
-    print(H2to1)
+    H2to1 = ransacH(matches, locs1, locs2, num_iter=5000, tol=2)
+    # H2to1 = np.load('H2to1_correct.npy')
 
-    # pano_im = imageStitching_noClip(im1, im2, H2to1)
-    pano_im = imageStitching(im1, im2, H2to1)
+    # pano_im = imageStitching(im1, im2, H2to1)
+    pano_im = imageStitching_noClip(im1, im2, H2to1)
 
     # cv2.imwrite('../results/panoImg.png', pano_im)
-    displayImage(pano_im,'panoramas')
+    displayImage(pano_im, 'panoramas')

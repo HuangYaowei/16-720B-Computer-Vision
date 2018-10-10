@@ -29,12 +29,12 @@ def displayPyramid(im_pyramid):
     while (cv2.waitKey(33) != 27): pass
     cv2.destroyAllWindows()
 
-def displayImage(img, title='Image'):
+def displayImage(img, title='Image', size=500):
     # Single image
     if type(img) == np.ndarray:
         cv2.namedWindow(title, cv2.WINDOW_NORMAL)
         cv2.imshow(title, img)
-        cv2.resizeWindow(title, 500, 500)
+        cv2.resizeWindow(title, size, size)
 
     # Multiple images
     else: 
@@ -145,14 +145,14 @@ def getLocalExtrema(DoG_pyramid, DoG_levels, principal_curvature, th_contrast=0.
     locsDoG = np.asarray(locsDoG)
     return locsDoG
 
-def displayPoints(img, locsDoG, factor=10, fname=None):
+def displayPoints(img, locsDoG, factor=10, fname=None, radius=10):
     # Resize for better display
     img = cv2.resize(img, None, fx=factor, fy=factor)
     
     # Draw the interest points
     for x, y, level in locsDoG:
         color = (int(level==1)*255, int(level==2)*255, int(level==3)*255)
-        img = cv2.circle(img, (x*factor, y*factor), factor, (0, 255, 0), -1)
+        img = cv2.circle(img, (x*factor, y*factor), radius, (0, 255, 0), -1)
     
     if fname: cv2.imwrite(fname, img)
     displayImage(img)

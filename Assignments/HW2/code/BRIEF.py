@@ -1,5 +1,11 @@
+#!/usr/bin/python3
+
+'''
+16-720B Computer Vision (Fall 2018)
+Homework 2 - Feature Descriptors, Homographies & RANSAC
+'''
+
 import os
-import sys
 
 import cv2
 import numpy as np
@@ -59,18 +65,20 @@ def computeBrief(im, gaussian_pyramid, locsDoG, k, levels, compareX, compareY):
 
     patch_width = 9
     locs, desc = [], []
+    H, W, C = gaussian_pyramid.shape
 
     # (fx, fy) are interest points at a given level
     for fx, fy, level in locsDoG:
+        # Check if it's possible to create a patch
+        if not ((fy-patch_width//2 >= 0) and (fy+1+patch_width//2 < H) \
+            and (fx-patch_width//2 >= 0) and (fx+1+patch_width//2 < W)): continue
+        
         # Get a patch of size (patch_width x patch_width)
         patch = gaussian_pyramid[fy-patch_width//2:fy+1+patch_width//2, fx-patch_width//2:fx+1+patch_width//2, level].flatten()
         
-        # Check if it's possible to create a patch
-        if patch.shape[0] != (patch_width * patch_width): continue
-        locs.append([fx, fy, level])
-        
         # tx, ty are test points for the patch
         desc.append([ 1 if patch[tx] < patch[ty] else 0 for tx, ty in zip(compareX, compareY) ])
+        locs.append([fx, fy, level])
     
     locs = np.asarray(locs)
     desc = np.asarray(desc)
@@ -132,8 +140,8 @@ def plotMatches(im1, im2, matches, locs1, locs2):
         pt2[0] += im1.shape[1]
         x = np.asarray([pt1[0], pt2[0]])
         y = np.asarray([pt1[1], pt2[1]])
-        plt.plot(x,y,'r')
-        plt.plot(x,y,'g.')
+        plt.plot(x, y, 'r')
+        plt.plot(x, y, 'g.')
     plt.show()
 
 # Test pattern for BRIEF
@@ -148,28 +156,23 @@ else:
     
 if __name__ == '__main__':
     # compareX, compareY = makeTestPattern()
-    # sys.exit(0)
 
-    im = cv2.imread('../data/model_chickenbroth.jpg')
-    im = cv2.imread('../data/chickenbroth_01.jpg')
-    locs, desc = briefLite(im)  
-    
-    fig = plt.figure()
-    plt.imshow(cv2.cvtColor(im, cv2.COLOR_BGR2GRAY), cmap='gray')
-    plt.plot(locs[:,0], locs[:,1], 'r.')
-    plt.draw()
-    plt.waitforbuttonpress(0)
-    plt.close(fig)
-
-    sys.exit(0)
-    
-    # test matches
     im1 = cv2.imread('../data/model_chickenbroth.jpg')
     im2 = cv2.imread('../data/chickenbroth_01.jpg')
+    # locs, desc = briefLite(im1)  
+    
+    # fig = plt.figure()
+    # plt.imshow(cv2.cvtColor(im, cv2.COLOR_BGR2GRAY), cmap='gray')
+    # plt.plot(locs[:,0], locs[:,1], 'r.')
+    # plt.draw()
+    # plt.waitforbuttonpress(0)
+    # plt.close(fig)
+    
+    # Test matches
     # im1 = cv2.imread('../data/pf_desk.jpg')
-    # im2 = cv2.imread('../data/pf_stand.jpg')
+    # im2 = cv2.imread('../data/pf_scan_scaled.jpg')
+    
     locs1, desc1 = briefLite(im1)
     locs2, desc2 = briefLite(im2)
     matches = briefMatch(desc1, desc2)
-    # np.save('BRIEF-ch', [locs1, locs2, desc1, desc2, matches])
     plotMatches(im1, im2, matches, locs1, locs2)

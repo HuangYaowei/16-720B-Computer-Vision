@@ -1,10 +1,15 @@
+#!/usr/bin/python3
+
+'''
+16-720B Computer Vision (Fall 2018)
+Homework 2 - Feature Descriptors, Homographies & RANSAC
+'''
+
 import cv2
 import numpy as np
 import matplotlib.pyplot as plt
-from mpl_toolkits.mplot3d import Axes3D
 
 from planarH import computeH
-from keypointDetect import displayImage, displayPoints
 
 W = np.matrix([[0.0,    18.2,   18.2,   0.0],
                [0.0,    0.0,    26.0,   26.0],
@@ -19,14 +24,6 @@ K = np.matrix([[3043.72,    0.0,        1196.00],
                [0.0,        0.0,        1.0]])
 
 ball_diameter = 6.8581
-
-def plot3D(points):
-    fig = plt.figure()
-    ax = fig.add_subplot(111, projection='3d')
-    ax.plot(points[0], points[1], points[2])
-    plt.grid()
-    plt.axis('equal')
-    plt.show()
 
 def load_sphere(filename):
     sphere = np.loadtxt(filename)
@@ -49,8 +46,8 @@ def compute_extrinsics(K, H):
     return R, t
 
 def project_extrinsics(K, W, R, t):
-    H44 = np.vstack([np.hstack([R, t]), [0, 0, 0, 1]])
-    proj = np.matmul(K, np.matmul(H44, W)[:-1])
+    proj = np.matmul(R, W + np.matrix([6.16, 18.4, -ball_diameter/2]).T) + t
+    proj = np.matmul(K, proj)
     proj = proj/proj[-1]
 
     return proj
@@ -65,16 +62,10 @@ if __name__ == '__main__':
     img = cv2.imread('../data/prince_book.jpeg')
     sphere = load_sphere('../data/sphere.txt')
 
-    # Translate sphere
-    sphere[0] += 10.65
-    sphere[1] += 20.45
-    sphere[2] -= ball_diameter/2
-
     # Compute parameters
     H = computeH(X[:2], W[:2])
     R, t = compute_extrinsics(K, H)
-    W = np.vstack([sphere, [1]*sphere.shape[1]])
     
     # Project 3D object on to the image
-    proj = project_extrinsics(K, W, R, t)
+    proj = project_extrinsics(K, sphere, R, t)
     project_on_image(img, proj)

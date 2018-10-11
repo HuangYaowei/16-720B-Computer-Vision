@@ -1,3 +1,10 @@
+#!/usr/bin/python3
+
+'''
+16-720B Computer Vision (Fall 2018)
+Homework 2 - Feature Descriptors, Homographies & RANSAC
+'''
+
 import cv2
 import numpy as np
 import matplotlib.pyplot as plt

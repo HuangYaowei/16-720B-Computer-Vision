@@ -1,4 +1,14 @@
-import sys
+#!/usr/bin/python3
+
+'''
+16-720B Computer Vision (Fall 2018)
+Homework 2 - Feature Descriptors, Homographies & RANSAC
+'''
+
+__author__ = "Heethesh Vhavle"
+__credits__ = ["Simon Lucey", "16-720B TAs"]
+__version__ = "1.0.1"
+__email__ = "heethesh@cmu.edu"
 
 import cv2
 import numpy as np
@@ -44,7 +54,7 @@ def imageStitching_noClip(im1, im2, H2to1):
     ''' 
 
     # Required output width
-    output_width = 2000
+    output_width = 1500
 
     # Collect the corner points of the warped image
     corners = np.asarray([[0, 0, 1], [0, im2.shape[0]-1, 1], [im2.shape[1]-1, 0, 1], [im2.shape[1]-1, im2.shape[0]-1, 1]]).T
@@ -110,23 +120,5 @@ if __name__ == '__main__':
     im1 = cv2.imread('../data/incline_L.png')
     im2 = cv2.imread('../data/incline_R.png')
     
-    print(im1.shape)
-    
-    # print('Computing BRIEF features for im1...')
-    # locs1, desc1 = briefLite(im1)
-    # print('Computing BRIEF features for im2...')
-    # locs2, desc2 = briefLite(im2)
-    # matches = briefMatch(desc1, desc2)
-    
-    # np.save('incline', [locs1, locs2, desc1, desc2, matches])
-    locs1, locs2, desc1, desc2, matches = np.load('incline.npy')
-    # plotMatches(im1, im2, matches, locs1, locs2)
-
-    H2to1 = ransacH(matches, locs1, locs2, num_iter=5000, tol=2)
-    # H2to1 = np.load('H2to1_correct.npy')
-
-    # pano_im = imageStitching(im1, im2, H2to1)
-    pano_im = imageStitching_noClip(im1, im2, H2to1)
-
-    # cv2.imwrite('../results/panoImg.png', pano_im)
-    displayImage(pano_im, 'panoramas')
+    pano_im = generatePanorama(im1, im2)
+    displayImage(pano_im, 'Panorama')

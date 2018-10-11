@@ -1,5 +1,12 @@
-import numpy as np
+#!/usr/bin/python3
+
+'''
+16-720B Computer Vision (Fall 2018)
+Homework 2 - Feature Descriptors, Homographies & RANSAC
+'''
+
 import cv2
+import numpy as np
 
 def createGaussianPyramid(im, sigma0=1, k=np.sqrt(2), levels=[-1, 0, 1, 2, 3, 4]):
     # Convert RGB to grayscale
@@ -187,14 +194,17 @@ def DoGdetector(im, sigma0=1, k=np.sqrt(2), levels=[-1, 0, 1, 2, 3, 4], th_contr
     # Get interest points
     locsDoG = getLocalExtrema(DoG_pyr, DoG_levels, pc_curvature, th_contrast, th_r)
 
-    # Display the points
-    # displayPoints(im, locsDoG)
-
     return locsDoG, gauss_pyramid
 
 if __name__ == '__main__':
     levels = [-1, 0, 1, 2, 3, 4]
     im = cv2.imread('../data/model_chickenbroth.jpg')
+
+    # Test DoG detector
+    locsDoG, gaussian_pyramid = DoGdetector(im)
+
+    # Display the points
+    displayPoints(im, locsDoG)
 
     '''
     # Test gaussian pyramid
@@ -217,6 +227,3 @@ if __name__ == '__main__':
     # Display the points
     displayPoints(im, locsDoG)
     '''
-    
-    # Test DoG detector
-    locsDoG, gaussian_pyramid = DoGdetector(im)

@@ -43,6 +43,7 @@ def LucasKanadeBasis(It, It1, rect, bases, p0=np.zeros(2), threshold=0.001, iter
 
         # Step 2 - Compute error image
         error_img = It - crop(warp_img, rect)
+        # error_img = error_img.flatten() - np.matmul(bases, np.matmul(bases.T, error_img.flatten()))
 
         # Step 3 - Warp the gradient
         gradient = np.dstack([np.gradient(warp_img, axis=1), np.gradient(warp_img, axis=0)])
@@ -74,4 +75,4 @@ if __name__ == '__main__':
     frames = np.load('../data/sylvseq.npy')    
     bases = np.load('../data/sylvbases.npy')
     rect = np.asarray([101, 61, 155, 107])
-    LucasKanadeBasis(crop(frames[:, :, 0], rect), frames[:, :, 1], bases)
+    LucasKanadeBasis(crop(frames[:, :, 0], rect), frames[:, :, 1], rect, bases)

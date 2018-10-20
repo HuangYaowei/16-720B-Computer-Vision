@@ -20,13 +20,13 @@ import matplotlib.patches as patches
 from LucasKanade import LucasKanade, crop
 
 def play(filename):
-    carseq = np.load(filename)
-    frames = carseq.shape[2]
+    frames = np.load(filename)
+    total_frames = frames.shape[2]
     fps = 24
 
     # Init figure
     fig, ax = plt.subplots(1)
-    im = ax.imshow(carseq[:, :, 0], animated=True, cmap='gray')
+    im = ax.imshow(frames[:, :, 0], animated=True, cmap='gray')
 
     # Initial rect
     init_rect = np.asarray([59, 116, 145, 151])
@@ -34,19 +34,17 @@ def play(filename):
 
     def updatefig(j):
         nonlocal rect
-        sys.stdout.write('\rFrame: %04d/%04d | FPS: %d | Sequence: [%s]%s' % (j, frames, fps, filename, ' '*10))
+        sys.stdout.write('\rFrame: %04d/%04d | FPS: %d | Sequence: [%s]%s' % (j, total_frames, fps, filename, ' '*10))
 
         # First frame rect
         if j == 1: rect = init_rect
 
-        # Create template
-        template = crop(carseq[:, :, j-1], rect)
-
         # Update image for display
-        im.set_array(carseq[:, :, j])
+        im.set_array(frames[:, :, j])
 
         # Lucas-Kanade using latest template
-        p = LucasKanade(template, carseq[:, :, j], rect)
+        template = crop(frames[:, :, j-1], rect)
+        p = LucasKanade(template, frames[:, :, j], rect)
         rect = (rect.reshape(2, 2) + p).flatten()
 
         # Clear patches and draw new boxes
@@ -57,7 +55,7 @@ def play(filename):
         return im
 
     # Run animation and display window
-    ani = animation.FuncAnimation(fig, updatefig, frames=range(1, frames), interval=1000//fps)
+    ani = animation.FuncAnimation(fig, updatefig, frames=range(1, total_frames), interval=1000//fps)
     plt.show()
 
 if __name__ == '__main__':

@@ -38,11 +38,11 @@ def crop(img, rect):
     # Faster approx method
     else:
         rect = rect.round().astype('int')
-        warped = img[rect[1]:rect[3], rect[0]:rect[2]]
+        warped = img[rect[1]:rect[3]+1, rect[0]:rect[2]+1]
 
     return warped
 
-def LucasKanade(It, It1, rect, p0=np.zeros(2), threshold=0.001, iters=20, debug=None):
+def LucasKanade(It, It1, rect, p0=np.zeros(2), threshold=0.001, iters=20):
     '''
     [input]
     * It - Template image

@@ -11,12 +11,12 @@ __version__ = "1.0.1"
 __email__ = "heethesh@cmu.edu"
 
 import numpy as np
-from scipy.ndimage import shift, affine_transform, sobel
+from scipy.ndimage import shift, affine_transform
 from scipy.interpolate import RectBivariateSpline
 
-from LucasKanade import crop, disp
+from LucasKanade import disp
 
-def LucasKanadeAffine(It, It1, threshold=0.0005, iters=50):
+def LucasKanadeAffine(It, It1, threshold=0.005, iters=50):
     '''
     [input]
     * It - Template image
@@ -36,11 +36,10 @@ def LucasKanadeAffine(It, It1, threshold=0.0005, iters=50):
     # Iterate 
     for i in range(iters):
         # Step 1 - Warp image
-        M_ = np.asarray([[p[4]+1, p[3], p[5]], [p[1], p[0]+1, p[2]]])
-        warp_img = affine_transform(It1, M_)
+        warp_img = affine_transform(It1, np.flip(M)[..., [1, 2, 0]])
 
         # Step 2 - Compute error image with common pixels
-        mask = affine_transform(np.ones(It1.shape), M_)
+        mask = affine_transform(np.ones(It1.shape), np.flip(M)[..., [1, 2, 0]])
         error_img = (mask * It) - (mask * warp_img)
 
         # Step 3 - Warp the gradient
@@ -73,8 +72,10 @@ def LucasKanadeAffine(It, It1, threshold=0.0005, iters=50):
         # Test for convergence
         if np.linalg.norm(delta_p) <= threshold: break
 
+    # print('%d %.4f'%(i, np.linalg.norm(delta_p)))
+
     return M
 
 if __name__ == '__main__':
-    carseq = np.load('../data/carseq.npy')
-    LucasKanadeAffine(carseq[:, :, 0], carseq[:, :, 1])
+    aerialseq = np.load('../data/aerialseq.npy')
+    LucasKanadeAffine(aerialseq[:, :, 0], aerialseq[:, :, 1])

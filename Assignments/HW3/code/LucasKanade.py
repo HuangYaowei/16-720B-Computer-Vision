@@ -18,10 +18,16 @@ import matplotlib.pyplot as plt
 
 FAST_WARP = True
 
-def disp(img):
+def disp(img, title=None):
+    # resp_min = img.min(axis=(0, 1), keepdims=True)
+    # resp_max = img.max(axis=(0, 1), keepdims=True)
+    # img = (img - resp_min) / (resp_max - resp_min)
+
     fig, ax = plt.subplots(1)
     plt.imshow(img, cmap='gray')
+    if title: plt.title(title)
     # plt.show()
+
     plt.draw()
     plt.waitforbuttonpress(0) # this will wait for indefinite time
     plt.close(fig)
@@ -68,7 +74,7 @@ def LucasKanade(It, It1, rect, p0=np.zeros(2), threshold=0.001, iters=20):
         error_img = It - crop(warp_img, rect)
 
         # Step 3 - Warp the gradient
-        gradient = np.dstack([np.gradient(warp_img, axis=1), np.gradient(warp_img, axis=0)])
+        gradient = np.dstack(np.gradient(warp_img)[::-1])
         gradient = np.dstack([crop(gradient[:, :, 0], rect), crop(gradient[:, :, 1], rect)])
         warp_gradient = gradient.reshape(gradient.shape[0] * gradient.shape[1], 2)
 

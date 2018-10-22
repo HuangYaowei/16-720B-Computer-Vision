@@ -42,7 +42,7 @@ def LucasKanadeAffine(It, It1, threshold=0.005, iters=50):
         mask = affine_transform(np.ones(It1.shape), np.flip(M)[..., [1, 2, 0]])
         error_img = (mask * It) - (mask * warp_img)
 
-        # Step 3 - Warp the gradient
+        # Step 3 - Compute and warp the gradient
         gradient = np.dstack(np.gradient(warp_img)[::-1])
         warp_gradient = gradient.reshape(gradient.shape[0] * gradient.shape[1], 2).T
 
@@ -52,12 +52,8 @@ def LucasKanadeAffine(It, It1, threshold=0.005, iters=50):
         Jy = np.tile(np.linspace(0, H-1, H), (W, 1)).T.flatten()
 
         # Step 5 - Compute the steepest descent images
-        steepest_descent = np.vstack([warp_gradient[0] * Jx,
-                                      warp_gradient[0] * Jy,
-                                      warp_gradient[0],
-                                      warp_gradient[1] * Jx,
-                                      warp_gradient[1] * Jy,
-                                      warp_gradient[1]]).T
+        steepest_descent = np.vstack([warp_gradient[0] * Jx, warp_gradient[0] * Jy,
+            warp_gradient[0], warp_gradient[1] * Jx, warp_gradient[1] * Jy, warp_gradient[1]]).T
 
         # Step 6 - Compute the Hessian matrix
         hessian = np.matmul(steepest_descent.T, steepest_descent)
@@ -72,10 +68,12 @@ def LucasKanadeAffine(It, It1, threshold=0.005, iters=50):
         # Test for convergence
         if np.linalg.norm(delta_p) <= threshold: break
 
-    # print('%d %.4f'%(i, np.linalg.norm(delta_p)))
-
+    print('%d %.4f'%(i, np.linalg.norm(delta_p)))
     return M
 
 if __name__ == '__main__':
     aerialseq = np.load('../data/aerialseq.npy')
-    LucasKanadeAffine(aerialseq[:, :, 0], aerialseq[:, :, 1])
+    import time
+    start = time.time()
+    LucasKanadeAffine(aerialseq[:, :, 0], aerialseq[:, :, 4])
+    print(time.time()-start)

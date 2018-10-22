@@ -66,15 +66,24 @@ def InverseCompositionAffine(It, It1, threshold=0.005, iters=50):
         M = np.linalg.inv(np.vstack([p.reshape(2, 3) + I, [0, 0, 1]]))
         M = (M/M[-1, -1])[:2, :]
 
+        # Alternate Step 9 - Update the parameters
+        '''
+        M = np.linalg.inv(np.vstack([p.reshape(2, 3) + I, [0, 0, 1]]))
+        dM = np.linalg.inv(np.vstack([delta_p.reshape(2, 3) + I, [0, 0, 1]]))
+        M = np.matmul(M, dM)
+        M = (M/M[-1, -1])[:2, :]
+        p = p + delta_p
+        '''
+
         # Test for convergence
         if np.linalg.norm(delta_p) <= threshold: break
 
-    print('%d %.4f'%(i, np.linalg.norm(delta_p)))
+    # print('%d %.4f'%(i, np.linalg.norm(delta_p)))
     return M
 
 if __name__ == '__main__':
     aerialseq = np.load('../data/aerialseq.npy')
     import time
     start = time.time()
-    InverseCompositionAffine(aerialseq[:, :, 0], aerialseq[:, :, 4])
+    InverseCompositionAffine(aerialseq[:, :, 0], aerialseq[:, :, 1])
     print(time.time()-start)

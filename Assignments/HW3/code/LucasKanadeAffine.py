@@ -68,12 +68,12 @@ def LucasKanadeAffine(It, It1, threshold=0.005, iters=50):
         # Test for convergence
         if np.linalg.norm(delta_p) <= threshold: break
 
-    print('%d %.4f'%(i, np.linalg.norm(delta_p)))
+    # print('%d %.4f'%(i, np.linalg.norm(delta_p)))
     return M
 
 if __name__ == '__main__':
     aerialseq = np.load('../data/aerialseq.npy')
     import time
     start = time.time()
-    LucasKanadeAffine(aerialseq[:, :, 0], aerialseq[:, :, 4])
+    LucasKanadeAffine(aerialseq[:, :, 0], aerialseq[:, :, 1])
     print(time.time()-start)

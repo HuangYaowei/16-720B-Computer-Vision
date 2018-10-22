@@ -18,11 +18,12 @@ from scipy.ndimage.morphology import binary_opening, binary_closing
 from LucasKanade import disp
 from LucasKanadeAffine import LucasKanadeAffine
 
-def SubtractDominantMotion(image1, image2, threshold=0.3, iters=7):
+def SubtractDominantMotion(image1, image2, LK_method=LucasKanadeAffine, threshold=0.3, iters=7):
     '''
     [input]
     * image1 - Image at time t
-    * image2 - Image at time t+1
+    * image2 - Image at time t+1'
+    * LK_method - Lucas Kanade function used for registration
     * threshold - Threshold for creating binary mask
     * iters - Iterations for morphological closing
 
@@ -31,7 +32,7 @@ def SubtractDominantMotion(image1, image2, threshold=0.3, iters=7):
     '''
 
     # Compute affine transform
-    M1to2 = np.flip(LucasKanadeAffine(image1, image2))[..., [1, 2, 0]]
+    M1to2 = np.flip(LK_method(image1, image2))[..., [1, 2, 0]]
     M2to1 = np.linalg.inv(np.vstack([M1to2, [0, 0, 1]]))
     M2to1 = M2to1/M2to1[-1, -1]
 

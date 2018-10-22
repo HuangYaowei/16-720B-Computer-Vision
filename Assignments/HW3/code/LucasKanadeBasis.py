@@ -43,7 +43,7 @@ def LucasKanadeBasis(It, It1, rect, bases, p0=np.zeros(2), threshold=0.001, iter
         error_img = It - crop(warp_img, rect)
         # error_img = error_img.flatten() - np.matmul(bases, np.matmul(bases.T, error_img.flatten()))
 
-        # Step 3 - Warp the gradient
+        # Step 3 - Compute and warp the gradient
         gradient = np.dstack(np.gradient(warp_img)[::-1])
         gradient = np.dstack([crop(gradient[:, :, 0], rect), crop(gradient[:, :, 1], rect)])
         warp_gradient = gradient.reshape(gradient.shape[0] * gradient.shape[1], 2)

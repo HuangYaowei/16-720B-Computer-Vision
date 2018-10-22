@@ -18,6 +18,7 @@ from matplotlib import animation
 import matplotlib.patches as patches
 
 from SubtractDominantMotion import SubtractDominantMotion
+from InverseCompositionAffine import InverseCompositionAffine
 
 def play(filename):
     frames = np.load(filename)
@@ -36,7 +37,7 @@ def play(filename):
         im = ax.imshow(frames[:, :, j], cmap='gray')
 
         # Get motion detection mask and display
-        mask = SubtractDominantMotion(frames[:, :, j-1], frames[:, :, j])
+        mask = SubtractDominantMotion(frames[:, :, j-1], frames[:, :, j])#, InverseCompositionAffine)
         ax.imshow(np.ma.masked_array(mask, np.invert(mask)), alpha=0.7, cmap='autumn')
 
         return im

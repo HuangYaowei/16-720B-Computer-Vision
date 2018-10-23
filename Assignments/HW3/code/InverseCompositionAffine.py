@@ -30,7 +30,6 @@ def InverseCompositionAffine(It, It1, threshold=0.005, iters=50):
 
     # Initial parameters
     M = np.asarray([[1.0, 0.0, 0.0], [0.0, 1.0, 0.0]])
-    p = np.asarray([0.0]*6)
     I = M
 
     # Step 3 - Compute the gradient for template
@@ -62,23 +61,12 @@ def InverseCompositionAffine(It, It1, threshold=0.005, iters=50):
         delta_p = np.matmul(np.linalg.inv(hessian), np.matmul(steepest_descent.T, error_img.flatten()))
         
         # Step 9 - Update the parameters
-        p = p + delta_p
-        M = np.linalg.inv(np.vstack([p.reshape(2, 3) + I, [0, 0, 1]]))
-        M = (M/M[-1, -1])[:2, :]
-
-        # Alternate Step 9 - Update the parameters
-        '''
-        M = np.linalg.inv(np.vstack([p.reshape(2, 3) + I, [0, 0, 1]]))
-        dM = np.linalg.inv(np.vstack([delta_p.reshape(2, 3) + I, [0, 0, 1]]))
-        M = np.matmul(M, dM)
-        M = (M/M[-1, -1])[:2, :]
-        p = p + delta_p
-        '''
+        dM = np.vstack([delta_p.reshape(2, 3) + I, [0, 0, 1]])
+        M = np.matmul(M, np.linalg.inv(dM))
 
         # Test for convergence
         if np.linalg.norm(delta_p) <= threshold: break
 
-    # print('%d %.4f'%(i, np.linalg.norm(delta_p)))
     return M
 
 if __name__ == '__main__':
@@ -86,4 +74,4 @@ if __name__ == '__main__':
     import time
     start = time.time()
     InverseCompositionAffine(aerialseq[:, :, 0], aerialseq[:, :, 1])
-    print(time.time()-start)
+    print('Took:', time.time()-start)

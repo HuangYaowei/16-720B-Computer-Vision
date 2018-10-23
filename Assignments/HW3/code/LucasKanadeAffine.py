@@ -43,7 +43,9 @@ def LucasKanadeAffine(It, It1, threshold=0.005, iters=50):
         error_img = (mask * It) - (mask * warp_img)
 
         # Step 3 - Compute and warp the gradient
-        gradient = np.dstack(np.gradient(warp_img)[::-1])
+        gradient = np.dstack(np.gradient(It1)[::-1])
+        gradient[:, :, 0] = affine_transform(gradient[:, :, 0], np.flip(M)[..., [1, 2, 0]])
+        gradient[:, :, 1] = affine_transform(gradient[:, :, 1], np.flip(M)[..., [1, 2, 0]])
         warp_gradient = gradient.reshape(gradient.shape[0] * gradient.shape[1], 2).T
 
         # Step 4 - Evaluate jacobian parameters
@@ -76,4 +78,4 @@ if __name__ == '__main__':
     import time
     start = time.time()
     LucasKanadeAffine(aerialseq[:, :, 0], aerialseq[:, :, 1])
-    print(time.time()-start)
+    print('Took:', time.time()-start)

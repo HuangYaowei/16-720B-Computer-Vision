@@ -10,15 +10,13 @@ __credits__ = ["Simon Lucey", "16-720B TAs"]
 __version__ = "1.0.1"
 __email__ = "heethesh@cmu.edu"
 
-import sys
-
 import numpy as np
 import matplotlib.pyplot as plt
 import matplotlib.colors as colors
 import matplotlib.patches as patches
+
 from matplotlib import animation
 from mpl_toolkits.mplot3d import Axes3D
-
 from scipy.ndimage import correlate, convolve
 
 img = np.load('lena.npy')
@@ -70,6 +68,38 @@ sigma = 5
 X = np.zeros((N, N))
 Y = np.zeros((N, 1))
 
+def get_filter(X, y, lambda_):
+    S = np.matmul(X, X.T)
+    temp = (lambda_ * np.eye(X.shape[0]))
+    temp = np.linalg.inv(S + temp)
+
+    g = np.matmul(temp, np.matmul(X, y))
+    g = g.reshape(dsize)
+
+    print(g.shape)
+
+    return g
+
+def display(img, title):
+    fig_disp, ax_disp = plt.subplots(1)
+    ax_disp.imshow(img, cmap='gray')
+    plt.title(title)
+    plt.autoscale(tight=True)
+    plt.show()
+
+def display_filter(g, n):
+    display(g, 'Filter Visualisation for $\lambda = %d$'%n)
+
+def apply_filter(img, g, n, method=correlate):
+    # Flip filter for convolve
+    if method is convolve: g = g[::-1, ::-1]
+    
+    # Apply filter
+    output = method(img, g)
+
+    # Display
+    display(output, 'Filter Response for $\lambda = %d$ using %s'%(n, method.__name__))
+
 def init():
     return [cropax, patch, all_patchax]
 
@@ -94,56 +124,14 @@ def animate(i):
         ax3d = fig3d.add_subplot(111, projection='3d')
         ax3d.plot_surface(dpx.reshape(dsize), dpy.reshape(dsize), Y.reshape(dsize), cmap='coolwarm')
 
-        # np.savez('data', X=X, Y=Y)
-
         # Place your solution code for question 4.3 here
+        g = get_filter(X, Y, lambda_=0)
+        display_filter(g, 0)
+        apply_filter(img, g, 0, correlate)
+
         plt.show()
         return []
 
-# for i in range(N+1):
-#     sys.stdout.write('\r%d/%d%s' % (i, N+1, ' '*10))
-#     animate(i)
-
 # Start the animation
-# ani = animation.FuncAnimation(fig, animate, frames=N+1, init_func=init, blit=True, repeat=False, interval=10)
-# plt.show()
-
-data = np.load('data.npz')
-X = data['X']
-Y = data['Y']
-
-# print(X)
-
-# U, SS, V = np.linalg.svd(X)
-# print(V.T[:1])
-
-# g = np.linalg.lstsq(X.T, Y, rcond=-1)
-# print(g[0].shape, g[1].shape)
-
-S = X @ X.T
-S = S + np.eye(S.shape[0])
-S_inv = np.linalg.inv(S)
-
-print(X.shape, Y.shape, S_inv.shape)
-print(dsize)
-
-g1 = (S_inv @ (Y.T @ X.T).T).T
-g2 = np.linalg.inv(X) @ Y
-
-# fig3d = plt.figure()
-# ax3d = fig3d.add_subplot(111, projection='3d')
-# ax3d.plot_surface(dpx.reshape(dsize), dpy.reshape(dsize), g.reshape(dsize), cmap='coolwarm')
-
-g1f = g1.reshape(dsize)
-g2f = g2.reshape(dsize)
-
-im_g2 = correlate(img, g1f)
-
-fig_1,ax1 = plt.subplots()
-fig_2,ax2 = plt.subplots()
-ax1.imshow(im_g2, cmap='gray')
-ax2.imshow(g2.reshape(dsize), cmap='gray')
+ani = animation.FuncAnimation(fig, animate, frames=N+1, init_func=init, blit=True, repeat=False, interval=10)
 plt.show()
-
-# if np.linalg.det(S) == 0
-

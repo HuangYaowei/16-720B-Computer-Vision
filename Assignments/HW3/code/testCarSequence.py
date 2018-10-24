@@ -19,6 +19,8 @@ import matplotlib.patches as patches
 
 from LucasKanade import LucasKanade, crop
 
+import cv2
+
 def play(filename):
     frames = np.load(filename)
     total_frames = frames.shape[2]
@@ -31,6 +33,7 @@ def play(filename):
     # Initial rect
     init_rect = np.asarray([59, 116, 145, 151])
     rect = init_rect
+    save_rects = []
 
     def updatefig(j):
         nonlocal rect
@@ -46,11 +49,21 @@ def play(filename):
         template = crop(frames[:, :, j-1], rect)
         p = LucasKanade(template, frames[:, :, j], rect)
         rect = (rect.reshape(2, 2) + p).flatten()
+        save_rects.append(rect)
 
         # Clear patches and draw new boxes
         for patch in reversed(ax.patches): patch.remove()
         box = patches.Rectangle((rect[0], rect[1]), rect[2]-rect[0], rect[3]-rect[1], linewidth=2, edgecolor='y', facecolor='none')
         ax.add_patch(box)
+
+        # Save frames
+        if j in [1, 100, 200, 300, 400]:
+            fig.savefig('../writeup/carseq_%d.png'%j, bbox_inches='tight', pad_inches=0)
+
+        # Save rects
+        if j == total_frames-1:
+            # np.save('carseqrects', np.asarray(save_rects))
+            pass
 
         return im
 

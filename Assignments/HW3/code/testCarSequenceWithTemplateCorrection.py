@@ -31,6 +31,7 @@ def play(filename):
     # Initial rect
     init_rect = np.asarray([59, 116, 145, 151])
     rect, rect_ = init_rect, init_rect
+    save_rects = []
 
     # Initial template
     init_template = crop(frames[:, :, 0], init_rect)
@@ -50,6 +51,7 @@ def play(filename):
         # Lucas-Kanade using initial template
         p_star = LucasKanade(init_template, frames[:, :, j], rect_temp, p)
         rect = (rect.reshape(2, 2) + p_star).flatten()
+        save_rects.append(rect)
 
         # Lucas-Kanade wihtout drift correction
         template_ = crop(frames[:, :, j-1], rect_)
@@ -65,6 +67,15 @@ def play(filename):
         ax.add_patch(box)
         box = patches.Rectangle((rect_[0], rect_[1]), rect_[2]-rect_[0], rect_[3]-rect_[1], linewidth=2, edgecolor='g', facecolor='none')
         ax.add_patch(box)
+
+        # Save frames
+        if j in [1, 100, 200, 300, 400]:
+            fig.savefig('../writeup/carseqrects-wcrt_%d.png'%j, bbox_inches='tight', pad_inches=0)
+
+        # Save rects
+        if j == total_frames-1:
+            # np.save('carseqrects-wcrt', np.asarray(save_rects))
+            pass
         
         return im
 

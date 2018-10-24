@@ -16,29 +16,26 @@ from scipy.interpolate import RectBivariateSpline
 
 import matplotlib.pyplot as plt
 
-FAST_WARP = True
+FAST_CROP = True # (Integer Rounding / !RectBivariateSpline)
 
 def disp(img, title=None):
-    # resp_min = img.min(axis=(0, 1), keepdims=True)
-    # resp_max = img.max(axis=(0, 1), keepdims=True)
-    # img = (img - resp_min) / (resp_max - resp_min)
-
+    # Setup plot
     fig, ax = plt.subplots(1)
     plt.imshow(img, cmap='gray')
     if title: plt.title(title)
-    # plt.show()
 
+    # Plot and wait for keypress
     plt.draw()
-    plt.waitforbuttonpress(0) # this will wait for indefinite time
+    plt.waitforbuttonpress(0)
     plt.close(fig)
 
 def crop(img, rect):
     # Slower accurate method
-    if not FAST_WARP:
+    if not FAST_CROP:
         x_range = np.linspace(0, img.shape[1], img.shape[1], endpoint=False)
         y_range = np.linspace(0, img.shape[0], img.shape[0], endpoint=False)
-        rect_x = np.linspace(rect[0], rect[2], rect[2]-rect[0], endpoint=False)
-        rect_y = np.linspace(rect[1], rect[3], rect[3]-rect[1], endpoint=False)
+        rect_x = np.linspace(rect[0], rect[2], 35, endpoint=False)
+        rect_y = np.linspace(rect[1], rect[3], 86, endpoint=False)
         warped = RectBivariateSpline(y_range, x_range, img)(rect_y, rect_x)
     
     # Faster approx method
@@ -100,4 +97,5 @@ def LucasKanade(It, It1, rect, p0=np.zeros(2), threshold=0.001, iters=20):
 
 if __name__ == '__main__':
     carseq = np.load('../data/carseq.npy')
-    LucasKanade(carseq[:, :, 0], carseq[:, :, 1], np.asarray([59, 116, 145, 151]))
+    rect = np.asarray([59, 116, 145, 151])
+    LucasKanade(crop(carseq[:, :, 0], rect), carseq[:, :, 1], rect)

@@ -10,15 +10,13 @@ __credits__ = ["Simon Lucey", "16-720B TAs"]
 __version__ = "1.0.1"
 __email__ = "heethesh@cmu.edu"
 
-import cv2
 import numpy as np
 from scipy.ndimage import affine_transform
 from scipy.ndimage.morphology import binary_opening, binary_closing
 
-from LucasKanade import disp
 from LucasKanadeAffine import LucasKanadeAffine
 
-def SubtractDominantMotion(image1, image2, LK_method=LucasKanadeAffine, threshold=0.15, iters=7):
+def SubtractDominantMotion(image1, image2, LK_method=LucasKanadeAffine, threshold=0.1, iters=7):
     '''
     [input]
     * image1 - Image at time t

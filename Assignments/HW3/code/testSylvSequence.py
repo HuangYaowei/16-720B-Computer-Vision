@@ -33,6 +33,7 @@ def play(filename, bases_filename):
     # Initial rect
     init_rect = np.asarray([101, 61, 155, 107])
     rect, rect_ = init_rect, init_rect
+    save_rects = []
 
     def updatefig(j):
         nonlocal rect, rect_
@@ -48,6 +49,7 @@ def play(filename, bases_filename):
         template = crop(frames[:, :, j-1], rect)
         p = LucasKanadeBasis(template, frames[:, :, j], rect, bases)
         rect = (rect.reshape(2, 2) + p).flatten()
+        save_rects.append(rect)
 
         # Lucas-Kanade wihtout appearance basis
         template_ = crop(frames[:, :, j-1], rect_)
@@ -61,6 +63,16 @@ def play(filename, bases_filename):
         box = patches.Rectangle((rect_[0], rect_[1]), rect_[2]-rect_[0], rect_[3]-rect_[1], linewidth=2, edgecolor='g', facecolor='none')
         ax.add_patch(box)
 
+        # Save frames
+        if j in [1, 200, 300, 350, 400]:
+            fig.savefig('../writeup/sylvseqrects_%d.png'%j, bbox_inches='tight', pad_inches=0)
+
+        # Save rects
+        if j == total_frames-1:
+            print(np.asarray(save_rects).shape)
+            # np.save('sylvseqrects', np.asarray(save_rects))
+            pass
+
         return im
 
     # Run animation and display window
@@ -70,7 +82,10 @@ def play(filename, bases_filename):
 if __name__ == '__main__':
     play('../data/sylvseq.npy', '../data/sylvbases.npy')
     
-    # bases = np.load('../data/sylvbases.npy')
-    # for i in range(10):
-    #     plt.imshow(bases[:, :, i], cmap='gray')
-    #     plt.show()
+    # Visualize basis
+    '''
+    bases = np.load('../data/sylvbases.npy')
+    for i in range(10):
+        plt.imshow(bases[:, :, i], cmap='gray')
+        plt.show()
+    '''

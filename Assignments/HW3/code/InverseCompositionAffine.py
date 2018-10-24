@@ -14,8 +14,6 @@ import numpy as np
 from scipy.ndimage import shift, affine_transform
 from scipy.interpolate import RectBivariateSpline
 
-from LucasKanade import disp
-
 def InverseCompositionAffine(It, It1, threshold=0.005, iters=50):
     '''
     [input]

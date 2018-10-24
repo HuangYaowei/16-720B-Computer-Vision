@@ -40,6 +40,10 @@ def play(filename):
         mask = SubtractDominantMotion(frames[:, :, j-1], frames[:, :, j])#, InverseCompositionAffine)
         ax.imshow(np.ma.masked_array(mask, np.invert(mask)), alpha=0.7, cmap='autumn')
 
+        # Save frames
+        if j in [30, 60, 90, 120]:
+            fig.savefig('../writeup/aerialseq_%d.png'%j, bbox_inches='tight', pad_inches=0)
+
         return im
 
     # Run animation and display window

@@ -14,7 +14,7 @@ import numpy as np
 from scipy.ndimage import shift
 from scipy.interpolate import RectBivariateSpline
 
-from LucasKanade import crop, disp
+from LucasKanade import crop
     
 def LucasKanadeBasis(It, It1, rect, bases, p0=np.zeros(2), threshold=0.001, iters=20):
     '''
@@ -41,7 +41,7 @@ def LucasKanadeBasis(It, It1, rect, bases, p0=np.zeros(2), threshold=0.001, iter
 
         # Step 2 - Compute error image
         error_img = It - crop(warp_img, rect)
-        # error_img = error_img.flatten() - np.matmul(bases, np.matmul(bases.T, error_img.flatten()))
+        error_img = error_img.flatten() - np.matmul(bases, np.matmul(bases.T, error_img.flatten()))
 
         # Step 3 - Compute and warp the gradient
         gradient = np.dstack(np.gradient(warp_img)[::-1])

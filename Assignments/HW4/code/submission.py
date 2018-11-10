@@ -1,10 +1,15 @@
 """
-Homework4.
-Replace 'pass' by your implementation.
+Homework4
+Replace 'pass' by your implementation
 """
 
 # Insert your package here
+import cv2
+import numpy as np
+import scipy.ndimage
+import matplotlib.pyplot as plt
 
+import helper
 
 '''
 Q2.1: Eight Point Algorithm
@@ -14,9 +19,27 @@ Q2.1: Eight Point Algorithm
     Output: F, the fundamental matrix
 '''
 def eightpoint(pts1, pts2, M):
-    # Replace pass by your implementation
-    pass
+    assert(pts1.shape[0] >= 8)
+    assert(pts1.shape[0] == pts2.shape[0])
 
+    # Normalize points
+    p1 = pts1/M
+    p2 = pts2/M
+    T = np.diag([1/M, 1/M, 1])
+
+    # Create A matrix
+    A = np.vstack([p1[:, 0]*p2[:, 0], p1[:, 0]*p2[:, 1], p1[:, 0],
+                   p1[:, 1]*p2[:, 0], p1[:, 1]*p2[:, 1], p1[:, 1],
+                   p2[:, 0], p2[:, 1], np.ones(p1.shape[0])])
+
+    U, S, V = np.linalg.svd(A.T)
+    F = V[-1, :].reshape(3, 3)
+
+    F = helper._singularize(F)      # Singularize
+    F = helper.refineF(F, p1, p2)   # Ensure non-singular
+    F = T.T @ F @ T                 # Denormalize F
+
+    return F
 
 '''
 Q2.2: Seven Point Algorithm
@@ -26,9 +49,43 @@ Q2.2: Seven Point Algorithm
     Output: Farray, a list of estimated fundamental matrix.
 '''
 def sevenpoint(pts1, pts2, M):
-    # Replace pass by your implementation
-    pass
+    assert(pts1.shape[0] == 7)
+    assert(pts1.shape[0] == pts2.shape[0])
 
+    # Normalize points
+    p1 = pts1/M
+    p2 = pts2/M
+    T = np.diag([1/M, 1/M, 1])
+
+    # Create A matrix
+    A = np.vstack([p1[:, 0]*p2[:, 0], p1[:, 0]*p2[:, 1], p1[:, 0],
+                   p1[:, 1]*p2[:, 0], p1[:, 1]*p2[:, 1], p1[:, 1],
+                   p2[:, 0], p2[:, 1], np.ones(p1.shape[0])])
+
+    U, S, V = np.linalg.svd(A.T)
+    F1 = V[-1, :].reshape(3, 3)
+    F2 = V[-2, :].reshape(3, 3)
+
+    # Find coefficients
+    fun = lambda a: np.linalg.det(a*F1 + (1 - a)*F2)
+    a0 = fun(0)
+    a1 = 2*(fun(1) - fun(-1))/3 - (fun(2) - fun(-2))/12
+    a2 = 0.5*fun(1) + 0.5*fun(-1) - fun(0)
+    a3 = (fun(2) - fun(-2))/12 - (fun(1) - fun(-1))/6
+
+    # Find roots of the polynomial
+    roots = np.roots([a3, a2, a1, a0])
+    roots = np.real(roots[np.isreal(roots)])
+
+    Farray = []
+    for a in roots:
+        F = a*F1 + (1 - a)*F2
+        F = helper._singularize(F)      # Singularize
+        F = helper.refineF(F, p1, p2)   # Ensure non-singular
+        F = T.T @ F @ T                 # Denormalize F
+        Farray.append(F)
+
+    return Farray
 
 '''
 Q3.1: Compute the essential matrix E.
@@ -38,9 +95,7 @@ Q3.1: Compute the essential matrix E.
     Output: E, the essential matrix
 '''
 def essentialMatrix(F, K1, K2):
-    # Replace pass by your implementation
-    pass
-
+    return K2.T @ F @ K1 
 
 '''
 Q3.2: Triangulate a set of 2D coordinates in the image to a set of 3D points.
@@ -129,3 +184,16 @@ Q5.3 Bundle adjustment.
 def bundleAdjustment(K1, M1, p1, K2, M2_init, p2, P_init):
     # Replace pass by your implementation
     pass
+
+if __name__ == '__main__':
+    some_corresp = np.load('../data/some_corresp.npz')
+    im1 = scipy.ndimage.imread('../data/im1.png')
+    im2 = scipy.ndimage.imread('../data/im2.png')    
+    
+    # 4-0
+    np.random.seed(4)
+    r = np.random.randint(0, some_corresp['pts1'].shape[0], 7)
+
+    # F = eightpoint(some_corresp['pts1'], some_corresp['pts2'], max(im1.shape))
+    F = sevenpoint(some_corresp['pts1'][r], some_corresp['pts2'][r], max(im1.shape))
+    helper.displayEpipolarF(im1, im2, F[0])

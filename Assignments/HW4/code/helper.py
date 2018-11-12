@@ -4,9 +4,11 @@ Helper functions.
 
 Written by Chen Kong, 2018.
 """
+
 import numpy as np
-import matplotlib.pyplot as plt
 import scipy.optimize
+import matplotlib.pyplot as plt
+
 import submission as sub
 
 def _epipoles(E):
@@ -18,7 +20,6 @@ def _epipoles(E):
 
 def displayEpipolarF(I1, I2, F):
     e1, e2 = _epipoles(F)
-
     sy, sx, _ = I2.shape
 
     f, [ax1, ax2] = plt.subplots(1, 2, figsize=(12, 9))
@@ -29,12 +30,13 @@ def displayEpipolarF(I1, I2, F):
     ax2.set_title('Verify that the corresponding point \n is on the epipolar line in this image')
     ax2.set_axis_off()
 
-    while True:
-        plt.sca(ax1)
-        x, y = plt.ginput(1, mouse_stop=2)[0]
+    def onclick(event):
+        xc = event.xdata
+        yc = event.ydata
 
-        xc = x
-        yc = y
+        if not xc or not yc:
+            return
+
         v = np.array([xc, yc, 1])
         l = F.dot(v)
         s = np.sqrt(l[0]**2+l[1]**2)
@@ -42,24 +44,25 @@ def displayEpipolarF(I1, I2, F):
         if s==0:
             error('Zero line vector in displayEpipolar')
 
-        l = l/s;
+        l = l/s
 
         if l[0] != 0:
-            ye = sy-1;
-            ys = 0;
-            xe = -(l[1] * ye + l[2])/l[0];
-            xs = -(l[1] * ys + l[2])/l[0];
+            ye = sy-1
+            ys = 0
+            xe = -(l[1] * ye + l[2])/l[0]
+            xs = -(l[1] * ys + l[2])/l[0]
         else:
             xe = sx-1
             xs = 0
             ye = -(l[0] * xe + l[2])/l[1]
             ys = -(l[0] * xs + l[2])/l[1]
 
-        # plt.plot(x,y, '*', 'MarkerSize', 6, 'LineWidth', 2);
-        ax1.plot(x, y, '*', MarkerSize=6, linewidth=2)
+        ax1.plot(xc, yc, '*', MarkerSize=6, linewidth=2)
         ax2.plot([xs, xe], [ys, ye], linewidth=2)
         plt.draw()
 
+    f.canvas.mpl_connect('button_press_event', onclick)
+    plt.show()
 
 def _singularize(F):
     U, S, V = np.linalg.svd(F)
@@ -84,9 +87,10 @@ def refineF(F, pts1, pts2):
     f = scipy.optimize.fmin_powell(
         lambda x: _objective_F(x, pts1, pts2), F.reshape([-1]),
         maxiter=100000,
-        maxfun=10000
+        maxfun=10000,
+        disp=False
     )
-    return f.reshape([3, 3])
+    return _singularize(f.reshape([3, 3])) 
 
 def camera2(E):
     U,S,V = np.linalg.svd(E)
@@ -107,7 +111,6 @@ def camera2(E):
 
 def epipolarMatchGUI(I1, I2, F):
     e1, e2 = _epipoles(F)
-
     sy, sx, _ = I2.shape
 
     f, [ax1, ax2] = plt.subplots(1, 2, figsize=(12, 9))
@@ -118,37 +121,54 @@ def epipolarMatchGUI(I1, I2, F):
     ax2.set_title('Verify that the corresponding point \n is on the epipolar line in this image')
     ax2.set_axis_off()
 
-    while True:
-        plt.sca(ax1)
-        x, y = plt.ginput(1, mouse_stop=2)[0]
+    pts1 = []
+    pts2 = []
 
-        xc = int(x)
-        yc = int(y)
-        v = np.array([xc, yc, 1])
+    def onclick(event, pts1, pts2):
+        x1 = int(event.xdata)
+        y1 = int(event.ydata)
+
+        if not x1 or not y1:
+            return
+
+        v = np.array([x1, y1, 1])
         l = F.dot(v)
         s = np.sqrt(l[0]**2+l[1]**2)
 
         if s==0:
             error('Zero line vector in displayEpipolar')
 
-        l = l/s;
+        l = l/s
 
         if l[0] != 0:
-            ye = sy-1;
-            ys = 0;
-            xe = -(l[1] * ye + l[2])/l[0];
-            xs = -(l[1] * ys + l[2])/l[0];
+            ye = sy-1
+            ys = 0
+            xe = -(l[1] * ye + l[2])/l[0]
+            xs = -(l[1] * ys + l[2])/l[0]
         else:
             xe = sx-1
             xs = 0
             ye = -(l[0] * xe + l[2])/l[1]
             ys = -(l[0] * xs + l[2])/l[1]
 
-        # plt.plot(x,y, '*', 'MarkerSize', 6, 'LineWidth', 2);
-        ax1.plot(x, y, '*', MarkerSize=6, linewidth=2)
+        ax1.plot(x1, y1, '*', MarkerSize=6, linewidth=2)
         ax2.plot([xs, xe], [ys, ye], linewidth=2)
+        plt.draw()
 
         # draw points
-        x2, y2 = sub.epipolarCorrespondence(I1, I2, F, xc, yc)
+        x2, y2 = sub.epipolarCorrespondence(I1, I2, F, x1, y1)
+
+        # Add error handler. Personally, I think we should be allowed to return None, if input point is not desired
+        # (e.g. if it is at the corner, we will not be able to extract image patch for comparison)
+        if not y1 or not y2:
+            return
+
         ax2.plot(x2, y2, 'ro', MarkerSize=8, linewidth=2)
         plt.draw()
+
+        pts1.append([x1, y1])
+        pts2.append([x2, y2])
+
+    f.canvas.mpl_connect('button_press_event', lambda event: onclick(event, pts1, pts2))
+    plt.show()
+    return (np.stack(pts1), np.stack(pts2)) if len(pts1) > 0 else ([], [])

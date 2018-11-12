@@ -41,8 +41,10 @@ def findM2():
             best_data = [M2s[:, :, i], C2, P]
 
     # Save the data
-    np.savez('q3_3', M2=best_data[0], C2=best_data[1], P=best_data[2])
+    # np.savez('q3_3', M2=best_data[0], C2=best_data[1], P=best_data[2])
+    # np.savez('q4_2', F=F, M1=M1, C1=C1, M2=best_data[0], C2=best_data[1])
+
+    return F, C1, best_data[1]
 
 if __name__ == '__main__':
     findM2()
-    

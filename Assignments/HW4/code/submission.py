@@ -105,9 +105,11 @@ Q3.2: Triangulate a set of 2D coordinates in the image to a set of 3D points
             C2, the 3x4 camera matrix
             pts2, the Nx2 matrix with the 2D image coordinates per row
     Output: P, the Nx3 matrix with the corresponding 3D points per row
-            err, the reprojection error
+            err, the re-projection error
 '''
 def triangulate(C1, pts1, C2, pts2):
+    assert(pts1.shape[0] == pts2.shape[0])
+    
     err = 0
     P = []
 
@@ -129,6 +131,19 @@ def triangulate(C1, pts1, C2, pts2):
     return np.asarray(P), err
 
 '''
+Returns a 2D Gaussian kernel
+Input:  size, the kernel size (will be square)
+        sigma, the sigma Gaussian parameter
+Output: kernel, (size, size) array with the centered gaussian kernel
+'''
+def gaussianWindow(size, sigma=5):
+    x = np.linspace(-(size//2), size//2, size)
+    x /= np.sqrt(2)*sigma
+    x2 = x**2
+    kernel = np.exp(- x2[:, None] - x2[None, :])
+    return kernel / kernel.sum()
+
+'''
 Q4.1: 3D visualization of the temple images
     Input:  im1, the first image
             im2, the second image
@@ -139,8 +154,59 @@ Q4.1: 3D visualization of the temple images
             y2, y-coordinates of the pixel on im2
 '''
 def epipolarCorrespondence(im1, im2, F, x1, y1):
-    # Replace pass by your implementation
-    pass
+    # Convert to grayscale for better correspondence
+    rgb2gray = lambda rgb: np.dot(rgb[..., :3], [0.299, 0.587, 0.114])
+    im1 = rgb2gray(im1)
+    im2 = rgb2gray(im2)
+
+    # Find epipolar line
+    l = F @ [x1, y1, 1]
+    s = np.sqrt(l[0]**2 + l[1]**2)
+    if s==0: error('Zero line vector')
+    l = l/s
+
+    # Find start and end points for epipolar line
+    sy, sx = im2.shape
+    if l[0] != 0:
+        ye, ys = sy-1, 0
+        xe, xs = round(-(l[1] * ye + l[2])/l[0]), round(-(l[1] * ys + l[2])/l[0])
+    else:
+        xe, xs = sx-1, 0
+        ye, ys = round(-(l[0] * xe + l[2])/l[1]), round(-(l[0] * xs + l[2])/l[1])
+
+    # Generate (x, y) test points
+    N = max(abs(ye - ys), abs(xe - xs)) + 1
+    xp = np.round(np.linspace(xs, xe, N)).astype('int')
+    yp = np.round(np.linspace(ys, ye, N)).astype('int')
+    
+    # Correspondence parameters
+    limit = 40
+    win_size = 17
+    x2, y2 = None, None
+    best_score = np.finfo('float').max
+
+    for x, y in zip(xp, yp):
+        # Check if test point is close within limit
+        if (abs(x-x1) > limit) or (abs(y-y1) > limit): continue
+
+        # Check if it's possible to create a window
+        if not ((y-win_size//2 >= 0) and (y+1+win_size//2 < sy) \
+            and (x-win_size//2 >= 0) and (x+1+win_size//2 < sx)): continue
+
+        # Create windows
+        win1 = im1[y1-win_size//2:y1+1+win_size//2, x1-win_size//2:x1+1+win_size//2]
+        win2 = im2[y-win_size//2:y+1+win_size//2, x-win_size//2:x+1+win_size//2]
+        
+        # Apply gaussian kernel and compute SSD error
+        gaussian_kernel = gaussianWindow(win_size)
+        score = np.sum((gaussian_kernel * (win1 - win2))**2)
+
+        # Save best matching points
+        if score < best_score:
+            best_score = score
+            x2, y2 = x, y
+
+    return x2, y2
 
 '''
 Q5.1: RANSAC method
@@ -212,14 +278,17 @@ if __name__ == '__main__':
     M = max(im1.shape)
 
     # Eight-point algorithm
-    F = eightpoint(some_corresp['pts1'], some_corresp['pts2'], M)
-    np.savez('q2_1', F=F, M=M)
+    F8 = eightpoint(some_corresp['pts1'], some_corresp['pts2'], M)
+    # np.savez('q2_1', F=F8, M=M)
 
     # Seven-point algorithm
-    np.random.seed(4)
-    r = np.random.randint(0, some_corresp['pts1'].shape[0], 7)
-    F = sevenpoint(some_corresp['pts1'][r], some_corresp['pts2'][r], M)
-    np.savez('q2_2', F=F[0], M=M, pts1=some_corresp['pts1'][r], pts2=some_corresp['pts2'][r])
+    # np.random.seed(4)
+    # r = np.random.randint(0, some_corresp['pts1'].shape[0], 7)
+    # F7 = sevenpoint(some_corresp['pts1'][r], some_corresp['pts2'][r], M)
+    # np.savez('q2_2', F=F7[0], M=M, pts1=some_corresp['pts1'][r], pts2=some_corresp['pts2'][r])
     
     # Display on GUI
-    helper.displayEpipolarF(im1, im2, F[0])
+    # helper.displayEpipolarF(im1, im2, F7[0])
+
+    points = helper.epipolarMatchGUI(im1, im2, F8)
+    print(points)

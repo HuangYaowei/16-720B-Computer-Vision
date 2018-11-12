@@ -50,8 +50,8 @@ Q2.2: Seven Point Algorithm
     Output: Farray, a list of estimated fundamental matrix
 '''
 def sevenpoint(pts1, pts2, M):
-    assert(pts1.shape[0] == 7)
-    assert(pts1.shape[0] == pts2.shape[0])
+    assert (pts1.shape[0] == 7)
+    assert (pts1.shape[0] == pts2.shape[0])
 
     # Normalize points
     p1 = pts1/M
@@ -108,7 +108,7 @@ Q3.2: Triangulate a set of 2D coordinates in the image to a set of 3D points
             err, the re-projection error
 '''
 def triangulate(C1, pts1, C2, pts2):
-    assert(pts1.shape[0] == pts2.shape[0])
+    assert (pts1.shape[0] == pts2.shape[0])
     
     err = 0
     P = []
@@ -221,21 +221,45 @@ def ransacF(pts1, pts2, M):
 
 '''
 Q5.2: Rodrigues formula
+    Source: https://www2.cs.duke.edu/courses/compsci527/fall13/notes/rodrigues.pdf
     Input:  r, a 3x1 vector
     Output: R, a rotation matrix
 '''
 def rodrigues(r):
-    # Replace pass by your implementation
-    pass
+    ang = np.linalg.norm(r)
+    if ang == 0: return np.eye(3)
+    u = np.matrix(r/ang).T
+    v = np.asarray([[0, -u[2], u[1]], [u[2], 0, -u[0]], [-u[1], u[0], 0]])
+    R = np.eye(3)*np.cos(ang) + (1 - np.cos(ang))*(u @ u.T) + v*np.sin(ang)
+    return R
 
 '''
 Q5.2: Inverse Rodrigues formula
+    Source: https://www2.cs.duke.edu/courses/compsci527/fall13/notes/rodrigues.pdf
     Input:  R, a rotation matrix
     Output: r, a 3x1 vector
 '''
 def invRodrigues(R):
-    # Replace pass by your implementation
-    pass
+    assert (np.allclose(R @ R.T, np.eye(3))), "Not a rotation matrix"
+    assert (np.allclose(np.linalg.det(R), 1)), "Not a rotation matrix"
+
+    A = (R - R.T)/2
+    p = np.asarray([A[2, 1], A[0, 2], A[1, 0]])
+    s = np.linalg.norm(p)
+    c = (np.trace(R) - 1)/2
+    
+    if s == 0 and c == 1: 
+        return np.asarray([0, 0, 0])
+    elif s == 0 and c == -1: 
+        i = np.where((R + I).any(axis=0))[0]
+        v = (R + I)[:, i[0]]
+        u = v/np.linalg.norm(v)
+        r = u * np.pi
+        return -r if (np.linalg.norm(r) == np.pi) and ((r[0]==0 and r[1]==0 and r[2]<0) or (r[0]==0 and r[1]<0) or (r[0]<0)) else r
+    else:
+        u = p/s
+        ang = np.arctan2(s, c)
+        return u * ang
 
 '''
 Q5.3: Rodrigues residual
@@ -278,7 +302,7 @@ if __name__ == '__main__':
     M = max(im1.shape)
 
     # Eight-point algorithm
-    F8 = eightpoint(some_corresp['pts1'], some_corresp['pts2'], M)
+    # F8 = eightpoint(some_corresp['pts1'], some_corresp['pts2'], M)
     # np.savez('q2_1', F=F8, M=M)
 
     # Seven-point algorithm
@@ -290,5 +314,5 @@ if __name__ == '__main__':
     # Display on GUI
     # helper.displayEpipolarF(im1, im2, F7[0])
 
-    points = helper.epipolarMatchGUI(im1, im2, F8)
-    print(points)
+    # points = helper.epipolarMatchGUI(im1, im2, F8)
+    # print(points)

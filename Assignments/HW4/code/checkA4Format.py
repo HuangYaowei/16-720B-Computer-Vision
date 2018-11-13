@@ -7,6 +7,7 @@ Written by Chen Kong, 2018.
 import numpy as np
 import matplotlib.pyplot as plt
 import submission as sub
+
 data = np.load('../data/some_corresp.npz')
 im1 = plt.imread('../data/im1.png')
 im2 = plt.imread('../data/im2.png')
@@ -38,7 +39,7 @@ x2, y2 = sub.epipolarCorrespondence(im1, im2, F8, data['pts1'][0, 0], data['pts1
 assert np.isscalar(x2) & np.isscalar(y2), 'epipolarCoorespondence returns x & y coordinates'
 
 # 5.1
-F = sub.ransacF(data['pts1'], data['pts2'], M);
+F, _ = sub.ransacF(data['pts1'], data['pts2'], M);
 assert F.shape == (3, 3), 'ransacF returns 3x3 matrix'
 
 # 5.2
@@ -46,7 +47,7 @@ r = np.ones([3, 1])
 R = sub.rodrigues(r)
 assert R.shape == (3, 3), 'rodrigues returns 3x3 matrix'
 
-R = np.eye(3);
+R = np.eye(3)
 r = sub.invRodrigues(R)
 assert (r.shape == (3, )) | (r.shape == (3, 1)), 'invRodrigues returns 3x1 vector'
 

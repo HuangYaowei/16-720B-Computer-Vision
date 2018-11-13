@@ -8,9 +8,12 @@ import sys
 
 import numpy as np
 import scipy.ndimage
+import scipy.optimize
 import matplotlib.pyplot as plt
 
 import helper
+import visualize
+from findM2 import findM2
 
 '''
 Q2.1: Eight Point Algorithm
@@ -37,7 +40,7 @@ def eightpoint(pts1, pts2, M):
     F = V[-1, :].reshape(3, 3)
 
     F = helper._singularize(F)      # Singularize
-    F = helper.refineF(F, p1, p2)   # Ensure non-singular
+    F = helper.refineF(F, p1, p2)   # Refine F
     F = T.T @ F @ T                 # Denormalize F
 
     return F
@@ -49,7 +52,7 @@ Q2.2: Seven Point Algorithm
             M, a scalar parameter computed as max (imwidth, imheight)
     Output: Farray, a list of estimated fundamental matrix
 '''
-def sevenpoint(pts1, pts2, M):
+def sevenpoint(pts1, pts2, M, refine=True):
     assert (pts1.shape[0] == 7)
     assert (pts1.shape[0] == pts2.shape[0])
 
@@ -81,9 +84,10 @@ def sevenpoint(pts1, pts2, M):
     Farray = []
     for a in roots:
         F = a*F1 + (1 - a)*F2
-        F = helper._singularize(F)      # Singularize
-        F = helper.refineF(F, p1, p2)   # Ensure non-singular
-        F = T.T @ F @ T                 # Denormalize F
+        if refine:
+            F = helper._singularize(F)      # Singularize
+            F = helper.refineF(F, p1, p2)   # Refine F
+        F = T.T @ F @ T                     # Denormalize F
         Farray.append(F)
 
     return Farray
@@ -126,7 +130,7 @@ def triangulate(C1, pts1, C2, pts2):
         proj1 = C1 @ w
         proj2 = C2 @ w
 
-        err += np.linalg.norm(proj1[:2]/proj1[-1] - pts1)**2 + np.linalg.norm(proj2[:2]/proj2[-1] - pts2)**2
+        err += np.linalg.norm(proj1[:2]/proj1[-1] - pts1[i])**2 + np.linalg.norm(proj2[:2]/proj2[-1] - pts2[i])**2
         
     return np.asarray(P), err
 
@@ -136,7 +140,7 @@ Input:  size, the kernel size (will be square)
         sigma, the sigma Gaussian parameter
 Output: kernel, (size, size) array with the centered gaussian kernel
 '''
-def gaussianWindow(size, sigma=5):
+def gaussianWindow(size, sigma=3):
     x = np.linspace(-(size//2), size//2, size)
     x /= np.sqrt(2)*sigma
     x2 = x**2
@@ -181,7 +185,7 @@ def epipolarCorrespondence(im1, im2, F, x1, y1):
     
     # Correspondence parameters
     limit = 40
-    win_size = 17
+    win_size = 9
     x2, y2 = None, None
     best_score = np.finfo('float').max
 
@@ -216,8 +220,42 @@ Q5.1: RANSAC method
     Output: F, the fundamental matrix
 '''
 def ransacF(pts1, pts2, M):
-    # Replace pass by your implementation
-    pass
+    assert (pts1.shape[0] == pts2.shape[0])
+    
+    p1 = np.hstack((pts1, np.ones((pts1.shape[0], 1))))
+    p2 = np.hstack((pts2, np.ones((pts2.shape[0], 1))))
+
+    eps = 1e-3
+    max_iters = 1000
+    best_F = None
+    best_args = None
+    best_inliers = 0
+    
+    for i in range(max_iters):
+        sys.stdout.write('\rIteration: %04d/%04d %s' % (i+1, max_iters, ' '*10))
+        
+        # Pick 7 random points
+        rand = np.random.choice(pts1.shape[0], 7, False)
+        
+        # Compute fundamental matrix
+        Farray = sevenpoint(pts1[rand], pts2[rand], M, refine=False)
+
+        for F in Farray:
+            # Find the inliers with error less than threshold
+            args = np.where(np.abs((p1 @ F @ p2.T).diagonal()) < eps)[0]
+
+            # Save the best data
+            if len(args) > best_inliers:
+                best_F = F
+                best_args = args
+                best_inliers = len(args)
+
+    print('Inliers:', best_inliers)
+
+    # Refine fundamental matrix
+    F = helper.refineF(best_F, pts1[best_args], pts2[best_args])
+
+    return F, (pts1[best_args], pts2[best_args])
 
 '''
 Q5.2: Rodrigues formula
@@ -226,12 +264,13 @@ Q5.2: Rodrigues formula
     Output: R, a rotation matrix
 '''
 def rodrigues(r):
+    r = r.flatten()
     ang = np.linalg.norm(r)
     if ang == 0: return np.eye(3)
     u = np.matrix(r/ang).T
     v = np.asarray([[0, -u[2], u[1]], [u[2], 0, -u[0]], [-u[1], u[0], 0]])
     R = np.eye(3)*np.cos(ang) + (1 - np.cos(ang))*(u @ u.T) + v*np.sin(ang)
-    return R
+    return np.asarray(R)
 
 '''
 Q5.2: Inverse Rodrigues formula
@@ -240,8 +279,8 @@ Q5.2: Inverse Rodrigues formula
     Output: r, a 3x1 vector
 '''
 def invRodrigues(R):
-    assert (np.allclose(R @ R.T, np.eye(3))), "Not a rotation matrix"
-    assert (np.allclose(np.linalg.det(R), 1)), "Not a rotation matrix"
+    # assert (np.allclose(R.T @ R, np.eye(3))), "Not a rotation matrix"
+    # assert (np.allclose(np.linalg.det(R), 1)), "Not a rotation matrix"
 
     A = (R - R.T)/2
     p = np.asarray([A[2, 1], A[0, 2], A[1, 0]])
@@ -268,12 +307,22 @@ Q5.3: Rodrigues residual
             p1, the 2D coordinates of points in image 1
             K2, the intrinsics of camera 2
             p2, the 2D coordinates of points in image 2
-            x, the flattened concatenationg of P, r2, and t2
-                Output: residuals, the difference between original and estimated projections
+            x, the flattened concatenation of P, r2, and t2
+    Output: residuals, the difference between original and estimated projections
 '''
 def rodriguesResidual(K1, M1, p1, K2, p2, x):
-    # Replace pass by your implementation
-    pass
+    M2 = np.hstack((rodrigues(x[-6:-3]), x[-3:].reshape(3, 1)))
+    P = np.hstack((x[:-6].reshape(p1.shape[0], 3), np.ones((p1.shape[0], 1))))
+
+    p1_hat = (K1 @ M1 @ P.T).T
+    p2_hat = (K2 @ M2 @ P.T).T
+
+    p1_hat = p1_hat/p1_hat[:, -1].reshape(p1.shape[0], 1)
+    p2_hat = p2_hat/p2_hat[:, -1].reshape(p2.shape[0], 1)
+
+    residuals = np.concatenate([(p1-p1_hat[:, :2]).reshape([-1]), (p2-p2_hat[:, :2]).reshape([-1])])
+    # print(residuals.shape, type(residuals))
+    return residuals
 
 '''
 Q5.3 Bundle adjustment
@@ -288,12 +337,26 @@ Q5.3 Bundle adjustment
             P2, the optimized 3D coordinates of points
 '''
 def bundleAdjustment(K1, M1, p1, K2, M2_init, p2, P_init):
-    # Replace pass by your implementation
-    pass
+    # Extract and prepare data
+    R2, t2 = M2_init[:, :3], M2_init[:, 3]
+    x0 = np.hstack((P_init.flatten(), invRodrigues(R2).flatten(), t2.flatten()))
+    
+    # Optimize
+    fun = lambda x: rodriguesResidual(K1, M1, p1, K2, p2, x)
+    res = scipy.optimize.least_squares(fun, x0)
+    print('Optimisation status:', res.success)
+
+    # Extract optimized data
+    M2 = np.hstack((rodrigues(res.x[-6:-3]), res.x[-3:].reshape(3, 1)))
+    P2 = res.x[:-6].reshape(p1.shape[0], 3)
+    print(P2.shape)
+
+    return M2, P2
 
 if __name__ == '__main__':
     # Load data
     some_corresp = np.load('../data/some_corresp.npz')
+    noisy = np.load('../data/some_corresp_noisy.npz')
     intrinsics = np.load('../data/intrinsics.npz')
 
     # Load images
@@ -302,17 +365,29 @@ if __name__ == '__main__':
     M = max(im1.shape)
 
     # Eight-point algorithm
-    # F8 = eightpoint(some_corresp['pts1'], some_corresp['pts2'], M)
+    F8 = eightpoint(some_corresp['pts1'], some_corresp['pts2'], M)
+    print(np.linalg.matrix_rank(F8))
     # np.savez('q2_1', F=F8, M=M)
 
     # Seven-point algorithm
-    # np.random.seed(4)
-    # r = np.random.randint(0, some_corresp['pts1'].shape[0], 7)
-    # F7 = sevenpoint(some_corresp['pts1'][r], some_corresp['pts2'][r], M)
+    np.random.seed(4)
+    r = np.random.randint(0, some_corresp['pts1'].shape[0], 7)
+    F7 = sevenpoint(some_corresp['pts1'][r], some_corresp['pts2'][r], M)
     # np.savez('q2_2', F=F7[0], M=M, pts1=some_corresp['pts1'][r], pts2=some_corresp['pts2'][r])
+    print(np.linalg.matrix_rank(F7[0]))
+    sys.exit(0)
     
-    # Display on GUI
-    # helper.displayEpipolarF(im1, im2, F7[0])
-
     # points = helper.epipolarMatchGUI(im1, im2, F8)
     # print(points)
+
+    F7R, inliers = ransacF(noisy['pts1'], noisy['pts2'], M)
+
+    # Display on GUI
+    # helper.displayEpipolarF(im1, im2, F7R)
+
+    C1, C2, M1, M2_init, P_init = findM2(inliers[0], inliers[1], F7R, intrinsics['K1'], intrinsics['K2'])
+    M2, P2 = bundleAdjustment(intrinsics['K1'], M1, inliers[0], intrinsics['K2'], M2_init, inliers[1], P_init)
+
+    # points3D, _ = triangulate(C1, inliers[0], C2, inliers[1])
+    # visualize.plot3D(points3D)
+    visualize.plot3D(P2)

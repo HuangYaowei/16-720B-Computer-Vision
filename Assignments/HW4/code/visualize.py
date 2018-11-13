@@ -7,37 +7,45 @@ import helper
 import submission as sub
 from findM2 import findM2
 
+def plot3D(points3D):
+    fig = plt.figure()
+    ax = fig.add_subplot(111, projection='3d')
+    ax.scatter(points3D[:, 0], points3D[:, 1], points3D[:, 2])
+    plt.show(block=True)
+
+def visualize(pts1, F, C1, C2, im1, im2):
+    # Estimate stereo correspondences
+    pts2 = np.asarray([ sub.epipolarCorrespondence(im1, im2, F, pts1[i, 0], pts1[i, 1]) for i in range(pts1.shape[0]) ])
+
+    # Triangulate points
+    points3D, _ = sub.triangulate(C1, pts1, C2, pts2)
+
+    # Plot the 3D points
+    plot3D(points3D)
+
+    np.savez('templeCoords2', pts1=pts1, pts2=pts2)
+    
 '''
 Q4.2:
     1. Integrating everything together.
     2. Loads necessary files from ../data/ and visualizes 3D reconstruction using scatter3
 '''
-def visualize():
+if __name__ == '__main__':
     # Load data points
     points = np.load('../data/templeCoords.npz')
-    
+    some_corresp = np.load('../data/some_corresp.npz')
+    intrinsics = np.load('../data/intrinsics.npz')
+
     # Load images
     im1 = scipy.ndimage.imread('../data/im1.png')
     im2 = scipy.ndimage.imread('../data/im2.png')
+
+    # Compute fundamental matrix
+    F = sub.eightpoint(some_corresp['pts1'], some_corresp['pts2'], 640)
     
     # Get epipolar data
-    F, C1, C2 = findM2()
-
-    # Estimate stereo correspondences
-    points1, points2 = [], []
-    for i in range(points['x1'].shape[0]):
-        points1.append((int(points['x1'][i]), int(points['y1'][i])))
-        points2.append(sub.epipolarCorrespondence(im1, im2, F, points1[i][0], points1[i][1]))
-    points1, points2 = np.asarray(points1), np.asarray(points2)
-
-    # Triangulate points
-    points3D, _ = sub.triangulate(C1, points1, C2, points2)
-
-    # Plot the 3D points
-    fig = plt.figure()
-    ax = fig.add_subplot(111, projection='3d')
-    ax.scatter(points3D[:, 0], points3D[:, 1], points3D[:, 2])
-    plt.show()
-
-if __name__ == '__main__':
-    visualize()
+    C1, C2, M1, M2, P = findM2(some_corresp['pts1'], some_corresp['pts2'], F, intrinsics['K1'], intrinsics['K2'])
+    pts1 = np.hstack((points['x1'], points['y1'])).astype('int')
+    
+    # Run correspondence and visualize point cloud
+    visualize(pts1, F, C1, C2, im1, im2)

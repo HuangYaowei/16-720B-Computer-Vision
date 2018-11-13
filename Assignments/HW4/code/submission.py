@@ -62,9 +62,9 @@ def sevenpoint(pts1, pts2, M, refine=True):
     T = np.diag([1/M, 1/M, 1])
 
     # Create A matrix
-    A = np.vstack([p1[:, 0]*p2[:, 0], p1[:, 0]*p2[:, 1], p1[:, 0],
-                   p1[:, 1]*p2[:, 0], p1[:, 1]*p2[:, 1], p1[:, 1],
-                   p2[:, 0], p2[:, 1], np.ones(p1.shape[0])])
+    A = np.vstack([p2[:, 0]*p1[:, 0], p2[:, 0]*p1[:, 1], p2[:, 0],
+                   p2[:, 1]*p1[:, 0], p2[:, 1]*p1[:, 1], p2[:, 1],
+                   p1[:, 0], p1[:, 1], np.ones(p1.shape[0])])
 
     U, S, V = np.linalg.svd(A.T)
     F1 = V[-1, :].reshape(3, 3)
@@ -242,7 +242,7 @@ def ransacF(pts1, pts2, M):
 
         for F in Farray:
             # Find the inliers with error less than threshold
-            args = np.where(np.abs((p1 @ F @ p2.T).diagonal()) < eps)[0]
+            args = np.where(np.abs((p2 @ F @ p1.T).diagonal()) < eps)[0]
 
             # Save the best data
             if len(args) > best_inliers:
@@ -344,12 +344,11 @@ def bundleAdjustment(K1, M1, p1, K2, M2_init, p2, P_init):
     # Optimize
     fun = lambda x: rodriguesResidual(K1, M1, p1, K2, p2, x)
     res = scipy.optimize.least_squares(fun, x0)
-    print('Optimisation status:', res.success)
+    print('Optimisation Result:', res.success)
 
     # Extract optimized data
     M2 = np.hstack((rodrigues(res.x[-6:-3]), res.x[-3:].reshape(3, 1)))
     P2 = res.x[:-6].reshape(p1.shape[0], 3)
-    print(P2.shape)
 
     return M2, P2
 
@@ -365,29 +364,36 @@ if __name__ == '__main__':
     M = max(im1.shape)
 
     # Eight-point algorithm
-    F8 = eightpoint(some_corresp['pts1'], some_corresp['pts2'], M)
-    print(np.linalg.matrix_rank(F8))
+    # F8 = eightpoint(some_corresp['pts1'], some_corresp['pts2'], M)
+    # print(np.linalg.matrix_rank(F8))
     # np.savez('q2_1', F=F8, M=M)
 
     # Seven-point algorithm
-    np.random.seed(4)
-    r = np.random.randint(0, some_corresp['pts1'].shape[0], 7)
-    F7 = sevenpoint(some_corresp['pts1'][r], some_corresp['pts2'][r], M)
+    # np.random.seed(4)
+    # r = np.random.randint(0, some_corresp['pts1'].shape[0], 7)
+    # F7 = sevenpoint(some_corresp['pts1'][r], some_corresp['pts2'][r], M)
     # np.savez('q2_2', F=F7[0], M=M, pts1=some_corresp['pts1'][r], pts2=some_corresp['pts2'][r])
-    print(np.linalg.matrix_rank(F7[0]))
-    sys.exit(0)
+    # print(np.linalg.matrix_rank(F7[0]))
     
     # points = helper.epipolarMatchGUI(im1, im2, F8)
     # print(points)
 
     F7R, inliers = ransacF(noisy['pts1'], noisy['pts2'], M)
-
-    # Display on GUI
-    # helper.displayEpipolarF(im1, im2, F7R)
+    C1, C2, _, _, _ = findM2(noisy['pts1'], noisy['pts2'], F7R, intrinsics['K1'], intrinsics['K2'])
+    _, err = triangulate(C1, noisy['pts1'], C2, noisy['pts2'])
+    print('Re-projection Error Before (All):', err)
 
     C1, C2, M1, M2_init, P_init = findM2(inliers[0], inliers[1], F7R, intrinsics['K1'], intrinsics['K2'])
-    M2, P2 = bundleAdjustment(intrinsics['K1'], M1, inliers[0], intrinsics['K2'], M2_init, inliers[1], P_init)
+    _, err = triangulate(C1, inliers[0], C2, inliers[1])
+    print('Re-projection Error Before (Inliers):', err)
 
-    # points3D, _ = triangulate(C1, inliers[0], C2, inliers[1])
-    # visualize.plot3D(points3D)
+    M2, P2 = bundleAdjustment(intrinsics['K1'], M1, inliers[0], intrinsics['K2'], M2_init, inliers[1], P_init)
+    points3D, err = triangulate(C1, inliers[0], intrinsics['K2'] @ M2, inliers[1])
+    print('Re-projection Error After:', err)
+
+    # Display epipolar lines
+    # helper.displayEpipolarF(im1, im2, F7R)
+    
+    # Visualize 3D point cloud
     visualize.plot3D(P2)
+    # visualize.plot3D(points3D)

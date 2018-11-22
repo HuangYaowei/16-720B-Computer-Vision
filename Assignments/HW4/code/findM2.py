@@ -1,5 +1,16 @@
-import numpy as np
+#!/usr/bin/python3
 
+'''
+16-720B Computer Vision (Fall 2018)
+Homework 4 - 3D Reconstruction
+'''
+
+__author__ = "Heethesh Vhavle"
+__credits__ = ["Simon Lucey", "16-720B TAs"]
+__version__ = "1.0.1"
+__email__ = "heethesh@cmu.edu"
+
+import numpy as np
 import helper
 import submission as sub
 
@@ -18,7 +29,7 @@ def findM2(pts1, pts2, F, K1, K2):
     C1 = K1 @ M1
     
     # Find the correct M2
-    best_data = None
+    best_data = [None, None, None]
     best_err = np.finfo('float').max
     M2s = helper.camera2(E)
     

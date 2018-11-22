@@ -1,3 +1,15 @@
+#!/usr/bin/python3
+
+'''
+16-720B Computer Vision (Fall 2018)
+Homework 4 - 3D Reconstruction
+'''
+
+__author__ = "Heethesh Vhavle"
+__credits__ = ["Simon Lucey", "16-720B TAs"]
+__version__ = "1.0.1"
+__email__ = "heethesh@cmu.edu"
+
 import numpy as np
 import scipy.ndimage
 import matplotlib.pyplot as plt
@@ -22,8 +34,6 @@ def visualize(pts1, F, C1, C2, im1, im2):
 
     # Plot the 3D points
     plot3D(points3D)
-
-    np.savez('templeCoords2', pts1=pts1, pts2=pts2)
     
 '''
 Q4.2:

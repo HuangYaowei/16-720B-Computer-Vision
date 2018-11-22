@@ -1,11 +1,16 @@
-"""
-Homework4
-Replace 'pass' by your implementation
-"""
+#!/usr/bin/python3
 
-# Insert your package here
+'''
+16-720B Computer Vision (Fall 2018)
+Homework 4 - 3D Reconstruction
+'''
+
+__author__ = "Heethesh Vhavle"
+__credits__ = ["Simon Lucey", "16-720B TAs"]
+__version__ = "1.0.1"
+__email__ = "heethesh@cmu.edu"
+
 import sys
-
 import numpy as np
 import scipy.ndimage
 import scipy.optimize
@@ -316,12 +321,10 @@ def rodriguesResidual(K1, M1, p1, K2, p2, x):
 
     p1_hat = (K1 @ M1 @ P.T).T
     p2_hat = (K2 @ M2 @ P.T).T
-
     p1_hat = p1_hat/p1_hat[:, -1].reshape(p1.shape[0], 1)
     p2_hat = p2_hat/p2_hat[:, -1].reshape(p2.shape[0], 1)
 
     residuals = np.concatenate([(p1-p1_hat[:, :2]).reshape([-1]), (p2-p2_hat[:, :2]).reshape([-1])])
-    # print(residuals.shape, type(residuals))
     return residuals
 
 '''
@@ -341,10 +344,13 @@ def bundleAdjustment(K1, M1, p1, K2, M2_init, p2, P_init):
     R2, t2 = M2_init[:, :3], M2_init[:, 3]
     x0 = np.hstack((P_init.flatten(), invRodrigues(R2).flatten(), t2.flatten()))
     
-    # Optimize
+    # Optimize least squares
     fun = lambda x: rodriguesResidual(K1, M1, p1, K2, p2, x)
     res = scipy.optimize.least_squares(fun, x0)
-    print('Optimisation Result:', res.success)
+
+    # Optimize minimize
+    # fun = lambda x: (rodriguesResidual(K1, M1, p1, K2, p2, x)**2).sum()
+    # res = scipy.optimize.minimize(fun, x0)
 
     # Extract optimized data
     M2 = np.hstack((rodrigues(res.x[-6:-3]), res.x[-3:].reshape(3, 1)))
@@ -365,27 +371,41 @@ if __name__ == '__main__':
 
     # Eight-point algorithm
     # F8 = eightpoint(some_corresp['pts1'], some_corresp['pts2'], M)
-    # print(np.linalg.matrix_rank(F8))
+    # print(F8, np.linalg.matrix_rank(F8))
     # np.savez('q2_1', F=F8, M=M)
+    # helper.displayEpipolarF(im1, im2, F8)
 
     # Seven-point algorithm
     # np.random.seed(4)
     # r = np.random.randint(0, some_corresp['pts1'].shape[0], 7)
     # F7 = sevenpoint(some_corresp['pts1'][r], some_corresp['pts2'][r], M)
-    # np.savez('q2_2', F=F7[0], M=M, pts1=some_corresp['pts1'][r], pts2=some_corresp['pts2'][r])
-    # print(np.linalg.matrix_rank(F7[0]))
+    # np.savez('q2_2', F=F7[2], M=M, pts1=some_corresp['pts1'][r], pts2=some_corresp['pts2'][r])
+    # print(F7, np.linalg.matrix_rank(F7[2]))
+    # helper.displayEpipolarF(im1, im2, F7[2])
     
-    # points = helper.epipolarMatchGUI(im1, im2, F8)
-    # print(points)
+    # Essential matrix
+    # print(essentialMatrix(F8, intrinsics['K1'], intrinsics['K2']))
 
+    # Epipolar Correspondences
+    # points = helper.epipolarMatchGUI(im1, im2, F8)
+    # np.savez('q4_1', F=F8, pts1=points[0], pts2=points[1])
+    
+    # RANSAC vs 8 point
     F7R, inliers = ransacF(noisy['pts1'], noisy['pts2'], M)
+    print('Fundamental Matrix Rank:', np.linalg.matrix_rank(F7R))
     C1, C2, _, _, _ = findM2(noisy['pts1'], noisy['pts2'], F7R, intrinsics['K1'], intrinsics['K2'])
     _, err = triangulate(C1, noisy['pts1'], C2, noisy['pts2'])
-    print('Re-projection Error Before (All):', err)
+    print('Re-projection Error Before (F7R All):', err)
+    # helper.displayEpipolarF(im1, im2, F7R)
+    
+    # F8R = eightpoint(inliers[0], inliers[1], M)
+    # C1, C2, _, _, _ = findM2(inliers[0], inliers[1], F8R, intrinsics['K1'], intrinsics['K2'])
+    # _, err = triangulate(C1, inliers[0], C2, inliers[1])
+    # print('Re-projection Error Before (F8 Inliers):', err)
 
     C1, C2, M1, M2_init, P_init = findM2(inliers[0], inliers[1], F7R, intrinsics['K1'], intrinsics['K2'])
     _, err = triangulate(C1, inliers[0], C2, inliers[1])
-    print('Re-projection Error Before (Inliers):', err)
+    print('Re-projection Error Before (F7R Inliers):', err)
 
     M2, P2 = bundleAdjustment(intrinsics['K1'], M1, inliers[0], intrinsics['K2'], M2_init, inliers[1], P_init)
     points3D, err = triangulate(C1, inliers[0], intrinsics['K2'] @ M2, inliers[1])
@@ -395,5 +415,5 @@ if __name__ == '__main__':
     # helper.displayEpipolarF(im1, im2, F7R)
     
     # Visualize 3D point cloud
-    visualize.plot3D(P2)
-    # visualize.plot3D(points3D)
+    # visualize.plot3D(P_init)
+    visualize.plot3D(points3D)

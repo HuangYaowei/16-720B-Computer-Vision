@@ -1,9 +1,11 @@
-"""
-Homework4.
-Helper functions.
+#!/usr/bin/python3
+
+'''
+16-720B Computer Vision (Fall 2018)
+Homework 4 - 3D Reconstruction
 
 Written by Chen Kong, 2018.
-"""
+'''
 
 import numpy as np
 import scipy.optimize

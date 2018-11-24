@@ -80,7 +80,6 @@ batches = get_random_batches(x, y, 5)
 # print batch sizes
 print([_[0].shape[0] for _ in batches])
 batch_num = len(batches)
-sys.exit(0)
 
 # WRITE A TRAINING LOOP HERE
 max_iters = 500
@@ -89,19 +88,31 @@ learning_rate = 1e-3
 for itr in range(max_iters):
     total_loss = 0
     avg_acc = 0
-    for xb, yb in batches:
-        pass
-        # forward
+    for ib, batch in enumerate(batches):
+        # Get batch
+        xb, yb = batch
 
-        # loss
-        # be sure to add loss and accuracy to epoch totals 
+        # Forward pass
+        h1 = forward(xb, params, name='layer1', activation=sigmoid)
+        probs = forward(h1, params, name='output', activation=softmax)
 
-        # backward
+        # Loss and accuracy
+        loss, acc = compute_loss_and_acc(yb, probs)
+        total_loss += loss
+        avg_acc = (acc + avg_acc*ib)/(ib + 1)
 
-        # apply gradient
+        # Backward pass
+        error = probs - yb
+        delta1 = backwards(error, params, name='output', activation_deriv=linear_deriv)
+        delta2 = backwards(delta1, params, name='layer1', activation_deriv=sigmoid_deriv)
+
+        # Apply gradient
+        for layer in ['output', 'layer1']:
+            params['W' + layer] -= learning_rate * params['grad_W' + layer]
+            params['b' + layer] -= learning_rate * params['grad_b' + layer]
 
     if itr % 100 == 0:
-        print("itr: {:02d} \t loss: {:.2f} \t acc : {:.2f}".format(itr, total_loss, avg_acc))
+        print("itr: {:03d} \t loss: {:.2f} \t acc : {:.2f}".format(itr, total_loss, avg_acc))
 
 # Q 2.5 should be implemented in this file
 # you can do this before or after training the network. 
@@ -112,14 +123,19 @@ params_orig = copy.deepcopy(params)
 
 eps = 1e-6
 for k, v in params.items():
+    print(k)
     if '_' in k: 
         continue
+    # v += eps
+    # ((v + eps) + (v - eps)) / (2*eps)
+
     # we have a real parameter!
     # for each value inside the parameter
     #   add epsilon
     #   run the network
     #   get the loss
     #   compute derivative with central diffs
+sys.exit(0)
     
 total_error = 0
 for k in params.keys():
@@ -127,7 +143,7 @@ for k in params.keys():
         # relative error
         err = np.abs(params[k] - params_orig[k])/np.maximum(np.abs(params[k]), np.abs(params_orig[k]))
         err = err.sum()
-        print('{} {:.2e}'.format(k,  err))
+        print('{} {:.2e}'.format(k, err))
         total_error += err
 # should be less than 1e-4
 print('total {:.2e}'.format(total_error))

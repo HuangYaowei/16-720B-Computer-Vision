@@ -86,12 +86,8 @@ max_iters = 500
 learning_rate = 1e-3
 # with default settings,  you should get loss < 35 and accuracy > 75%
 for itr in range(max_iters):
-    total_loss = 0
-    avg_acc = 0
-    for ib, batch in enumerate(batches):
-        # Get batch
-        xb, yb = batch
-
+    total_loss, total_acc = 0, 0
+    for xb, yb in batches:
         # Forward pass
         h1 = forward(xb, params, name='layer1', activation=sigmoid)
         probs = forward(h1, params, name='output', activation=softmax)
@@ -99,7 +95,7 @@ for itr in range(max_iters):
         # Loss and accuracy
         loss, acc = compute_loss_and_acc(yb, probs)
         total_loss += loss
-        avg_acc = (acc + avg_acc*ib)/(ib + 1)
+        total_acc += acc
 
         # Backward pass
         error = probs - yb
@@ -110,6 +106,9 @@ for itr in range(max_iters):
         for layer in ['output', 'layer1']:
             params['W' + layer] -= learning_rate * params['grad_W' + layer]
             params['b' + layer] -= learning_rate * params['grad_b' + layer]
+
+    # Total accuracy
+    avg_acc = total_acc / batch_num
 
     if itr % 100 == 0:
         print("itr: {:03d} \t loss: {:.2f} \t acc : {:.2f}".format(itr, total_loss, avg_acc))

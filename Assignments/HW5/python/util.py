@@ -1,3 +1,4 @@
+import torch
 import numpy as np
 
 # use for a "no activation" layer
@@ -18,3 +19,7 @@ def relu(x):
 
 def relu_deriv(x):
     return (x > 0).astype(np.float)
+
+def to_tensor(array):
+    tensor = torch.from_numpy(array).type(torch.FloatTensor)
+    return tensor

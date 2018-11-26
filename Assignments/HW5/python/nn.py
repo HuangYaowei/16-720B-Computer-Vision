@@ -76,7 +76,7 @@ probs is size [examples, classes]
 def compute_loss_and_acc(y, probs):
     loss = -np.sum(y * np.log(probs))
     acc = np.mean(np.sum(y * np.where(probs==probs.max(axis=1).reshape(-1, 1), 1, 0), axis=1))
-    return loss, acc 
+    return loss, acc
 
 '''
 We give this to you because you proved it

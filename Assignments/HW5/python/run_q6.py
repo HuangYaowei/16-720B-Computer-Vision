@@ -13,24 +13,25 @@ valid_x = valid_data['valid_data']
 
 dim = 32
 # do PCA
+U, S, V = np.linalg.svd(train_x.T)
 
-# rebuild a low-rank version
-lrank = None
+# Rebuild a low-rank version
+lrank = train_x.dot(U[:, :dim])
 
-# rebuild it
-recon = None
+# Rebuild it
+recon = lrank @ U[:, :dim].T
 
 for i in range(5):
-    plt.subplot(2,1,1)
-    plt.imshow(train_x[i].reshape(32,32).T)
-    plt.subplot(2,1,2)
-    plt.imshow(recon[i].reshape(32,32).T)
+    plt.subplot(2, 1, 1)
+    plt.imshow(train_x[i].reshape(32, 32).T)
+    plt.subplot(2, 1, 2)
+    plt.imshow(recon[i].reshape(32, 32).T)
     plt.show()
 
 # build valid dataset
-recon_valid = None
+recon_valid = valid_x.dot(U[:, :dim]) @ U[:, :dim].T
 
 total = []
-for pred,gt in zip(recon_valid,valid_x):
-    total.append(psnr(gt,pred))
+for pred, gt in zip(recon_valid, valid_x):
+    total.append(psnr(gt, pred))
 print(np.array(total).mean())

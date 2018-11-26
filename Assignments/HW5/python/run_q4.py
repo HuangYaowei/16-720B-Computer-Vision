@@ -38,7 +38,7 @@ for img in os.listdir('../images'):
 
         # Rescale and crop letters
         crop = bw[minr:maxr, minc:maxc]
-        crop = skimage.transform.rescale(crop, 29/max(maxc-minc, maxr-minr))
+        crop = skimage.transform.rescale(crop, 26/max(maxc-minc, maxr-minr))
         
         # Pad letters with odd shape offsets
         ypad, xpad = (32 - crop.shape[0])//2, (32 - crop.shape[1])//2

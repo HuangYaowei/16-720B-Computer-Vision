@@ -10,7 +10,11 @@ import skimage.segmentation
 import matplotlib.pyplot as plt
 import matplotlib.patches as mpatches
 
-BLUR_SIGMA = 3
+import warnings
+warnings.simplefilter(action='ignore', category=FutureWarning)
+warnings.simplefilter(action='ignore', category=UserWarning)
+
+BLUR_SIGMA = 2
 BW_CLOSING_ITERS = 3
 MIN_BBOX_AREA = 1000
 LABELS_EROSION_ITERS = 4
@@ -22,6 +26,7 @@ def findLabels(image, morph_iters=LABELS_EROSION_ITERS):
     for _ in range(morph_iters): image = skimage.morphology.binary_erosion(image)
     image = skimage.img_as_float(image)
     labels = skimage.measure.label(image-1)
+    labels = skimage.segmentation.clear_border(labels)
     regions = skimage.measure.regionprops(labels)
     return labels, regions
 
@@ -79,34 +84,30 @@ def sortLetters(bboxes):
     return bboxes_sorted, np.cumsum(counts)
     
 def findLetters(image):
+    # Preprocess and threshold the image
     image = skimage.img_as_float(image)
     image = skimage.color.rgb2gray(image)
     image = image / np.max(image)
     image = skimage.filters.gaussian(image, sigma=BLUR_SIGMA)
-    thresh = skimage.filters.threshold_minimum(image)
-    
+    thresh = skimage.filters.threshold_otsu(image)
     bw = image > thresh
+
+    # Apply morphological opertaions
     iters = (image.shape[0] * image.shape[1])//int(1.5e6) + 2*int(image.shape[1]>4000)
     for _ in range(iters): bw = skimage.morphology.binary_erosion(bw)
     for _ in range(BW_CLOSING_ITERS): bw = skimage.morphology.binary_closing(bw)
     bw = skimage.img_as_float(bw)
 
+    # Assign labels and find the bounding boxes
     labels, regions = findLabels(bw)
-
-    lines = 0
-    bboxes = []
-    for region in regions:
-        if region.area > MIN_BBOX_AREA:
-            minr, minc, maxr, maxc = region.bbox
-            bboxes.append(region.bbox)
-
+    bboxes = [ region.bbox for region in regions if region.area > MIN_BBOX_AREA]
     bboxes = removeJoints(bw, bboxes)
     if __name__ == '__main__': drawBoxes(bw, bboxes)
     
     return bboxes, bw
 
 if __name__ == '__main__':
-    n = 4
+    n = 1
     # n = np.random.randint(1, 5)
     if n==1: img = skimage.io.imread('../images/01_list.jpg')
     if n==2: img = skimage.io.imread('../images/02_letters.jpg')

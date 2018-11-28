@@ -17,8 +17,8 @@ learning_rate = 1e-2
 momentum = 0.9
 hidden_size = 64
 batch_size = 50
-batches = get_random_batches(train_x, train_y, batch_size)
-batch_num = len(batches)
+train_batches = get_random_batches(train_x, train_y, batch_size)
+valid_batches = get_random_batches(valid_x, valid_y, batch_size)
 
 # Network model
 model_name = 'fcn_nist36'

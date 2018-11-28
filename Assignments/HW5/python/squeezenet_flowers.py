@@ -19,10 +19,11 @@ max_iters = 100
 learning_rate = 1e-2
 momentum = 0.9
 batch_size = 50
-batches = get_random_batches(train_x, train_y, batch_size)
-batch_num = len(batches)
+train_batches = get_random_batches(train_x, train_y, batch_size)
+valid_batches = get_random_batches(valid_x, valid_y, batch_size)
 
 # Load pretrained model
+model_name = 'squeezenet'
 net = models.squeezenet1_1(pretrained=True)
 
 # Disable feature extraction

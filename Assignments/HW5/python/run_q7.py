@@ -1,7 +1,20 @@
+import time
 import numpy as np
 import torch
 import torch.optim as optim
 import torch.nn.functional as F
+
+def plot(data, title):
+    import matplotlib.pyplot as plt
+    plt.plot(np.arange(max_iters), data[:, 0])
+    plt.plot(np.arange(max_iters), data[:, 1])
+    plt.title('%s Curve'%title)
+    plt.xlabel('Epochs')
+    plt.ylabel('Total %s'%title)
+    plt.legend(['Train Data', 'Validation Data'])
+    plt.grid()
+    plt.savefig('../writeup/plots/%s_%s.png'%(model_name, title.lower()))
+    plt.show()
 
 def accuracy(probs, y):
     probs = F.softmax(probs, dim=1)
@@ -16,9 +29,10 @@ def train(save=False):
     # Training loop
     all_loss, all_acc = [], []
     for itr in range(max_iters):
-        total_loss, total_acc = 0, 0
+        # Train
         net.train()
-        for xb, yb in batches:
+        train_loss, train_acc = 0, 0
+        for xb, yb in train_batches:
             # Zero the parameter gradients
             optimizer.zero_grad()
 
@@ -29,35 +43,38 @@ def train(save=False):
             optimizer.step()
 
             # Loss and accuracy
-            total_loss += loss.item()
-            total_acc += accuracy(outputs, yb)
+            train_loss += loss.item()
+            train_acc += accuracy(outputs, yb)
 
-        # Total accuracy
-        avg_acc = total_acc / batch_num
-
-        # Validation forward pass, loss and accuracy
+        # Validate
         net.eval()
-        voutputs = net(valid_x)
-        valid_loss = F.cross_entropy(voutputs, torch.max(valid_y, 1)[1])
-        valid_acc = accuracy(voutputs, valid_y)
+        valid_loss, valid_acc = 0, 0
+        for xb, yb in valid_batches:
+            outputs = net(xb)
+            valid_loss += F.cross_entropy(outputs, torch.max(yb, 1)[1]).item()
+            valid_acc += accuracy(outputs, yb)
+        
+        # Total accuracy
+        train_acc = train_acc / len(train_batches)
+        valid_acc = valid_acc / len(valid_batches)
 
         # Save for plotting
-        all_loss.append([total_loss, valid_loss])
-        all_acc.append([avg_acc, valid_acc])
+        all_loss.append([train_loss, valid_loss])
+        all_acc.append([train_acc, valid_acc])
 
         if itr % 1 == 0:
-            print("itr: {:03d} loss: {:.2f} acc: {:.2f} vloss: {:.2f} vacc: {:.2f}".format(itr, total_loss, avg_acc, valid_loss, valid_acc))
+            print("{:s} | itr: {:03d} | loss: {:.2f} | acc: {:.2f} | vloss: {:.2f} | vacc: {:.2f}".format(model_name, itr, train_loss, train_acc, valid_loss, valid_acc))
 
-    # Save the learned parameters
+    # Save the learned parameters and graphs
     if save: 
-        torch.save(net.state_dict(), 'q7_%s.pt'%model_name)
-        np.savez('q7_%s_lossacc'%model_name, loss=np.asarray(all_loss), accuracy=np.asarray(all_acc))
+        torch.save(net.state_dict(), 'weights/%s.pt'%model_name)
+        np.savez('weights/%s_graphs'%model_name, loss=np.asarray(all_loss), accuracy=np.asarray(all_acc))
     
-    return all_loss, all_acc
+    return np.asarray(all_loss), np.asarray(all_acc)
 
 if __name__ == '__main__':
     # Select model
-    mode = 5
+    mode = 4
     if mode==1: from fcn_nist36 import *
     if mode==2: from cnn_mnist import *
     if mode==3: from cnn_nist36 import *
@@ -68,6 +85,19 @@ if __name__ == '__main__':
     # Network model
     if mode: net = Net()
 
+    # Set device
+    device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
+    net.to(device)
+    if torch.cuda.is_available(): 
+        train_batches = [ (x.to(device), y.to(device)) for x, y in train_batches ]
+        valid_batches = [ (x.to(device), y.to(device)) for x, y in valid_batches ]
+
     # Training loop
-    train(save=True)
+    start = time.time()
+    loss, acc = train(save=True)
+    print('Took %.2fs'%(time.time() - start))
+
+    # Plot and save graphs
+    plot(loss, 'Loss')
+    plot(acc, 'Accuracy')
     

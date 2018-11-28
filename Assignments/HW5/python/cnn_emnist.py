@@ -42,9 +42,9 @@ valid_x = to_tensor(valid_x.reshape(valid_x.shape[0], 1, 28, 28))
 max_iters = 100
 learning_rate = 1e-2
 momentum = 0.9
-batch_size = 100
-batches = get_random_batches(train_x, train_y, batch_size)
-batch_num = len(batches)
+batch_size = 50
+train_batches = get_random_batches(train_x, train_y, batch_size)
+valid_batches = get_random_batches(valid_x, valid_y, batch_size)
 
 # Network model
 model_name = 'cnn_emnist'
@@ -55,7 +55,7 @@ class Net(nn.Module):
         self.conv2 = nn.Conv2d(6, 16, kernel_size=5)
         self.fc1 = torch.nn.Linear(16*4*4, 120)
         self.fc2 = torch.nn.Linear(120, 84)
-        self.fc3 = torch.nn.Linear(84, 47)
+        self.fc3 = torch.nn.Linear(84, train_y.shape[1])
 
     def forward(self, x):
         x = F.max_pool2d(F.relu(self.conv1(x)), 2)

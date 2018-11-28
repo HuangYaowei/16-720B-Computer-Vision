@@ -41,23 +41,23 @@ train_x, train_y = to_tensor(train_data['train_data']), to_tensor(train_data['tr
 valid_x, valid_y = to_tensor(valid_data['valid_data']), to_tensor(valid_data['valid_labels'])
 
 # Hyperparameters
-max_iters = 100
+max_iters = 70
 learning_rate = 1e-2
 momentum = 0.9
 batch_size = 50
-batches = get_random_batches(train_x, train_y, batch_size)
-batch_num = len(batches)
+train_batches = get_random_batches(train_x, train_y, batch_size)
+valid_batches = get_random_batches(valid_x, valid_y, batch_size)
 
 # Network model
 model_name = 'lenet5_flowers'
 class Net(nn.Module):
     def __init__(self):
         super(Net, self).__init__()
-        self.conv1 = nn.Conv2d(3, 6, kernel_size=5)
-        self.conv2 = nn.Conv2d(6, 16, kernel_size=5)
-        self.fc1 = torch.nn.Linear(16*53*53, 120)
+        self.conv1 = nn.Conv2d(3, 20, kernel_size=5)
+        self.conv2 = nn.Conv2d(20, 60, kernel_size=5)
+        self.fc1 = torch.nn.Linear(60*53*53, 120)
         self.fc2 = torch.nn.Linear(120, 84)
-        self.fc3 = torch.nn.Linear(84, 36)
+        self.fc3 = torch.nn.Linear(84, train_y.shape[1])
 
     def forward(self, x):
         x = F.max_pool2d(F.relu(self.conv1(x)), 2)

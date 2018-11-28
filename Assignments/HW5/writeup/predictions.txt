@@ -1,0 +1,77 @@
+FCN -----------------------------
+Detecting >>> 03_haiku.jpg
+Accuracy: 87.04%
+
+HAIKUSAREEAGY
+BUTS0METIMESTREXD0NTMAKESENGE
+REFRIGERAT0R
+
+Detecting >>> 04_deep.jpg
+Accuracy: 78.05%
+
+DEEPLEARUIRG
+DEFPERLE2RHIN6
+2EERESTLEARNIHG
+
+Detecting >>> 02_letters.jpg
+Accuracy: 83.33%
+
+LBCDEFG
+HIJKLMN
+0PQRSTU
+VWXYZ
+1X3GS67X90
+
+Detecting >>> 01_list.jpg
+Found 2 joined letters
+Accuracy: 77.39%
+
+T0D0LIST
+IHXXEAT0R0LIST
+2CHECK0PF7HEFIRST
+THING0NT0D0LI5T
+ZRFALIZEY0UHAVEALREADT
+E0MPLETCDZTHINGS
+4REWRRDY0URSELFWITH
+ANAP
+
+CNN -----------------------------
+Detecting >>> 03_haiku.jpg
+Actual Accuracy: 88.89%
+Absolute Accuracy: 96.30%
+
+HAIKUSAREEASY
+BUTSOMETIMESTHEYDONtMAKESEnGE
+REfRI6ERAtOR
+
+Detecting >>> 04_deep.jpg
+Actual Accuracy: 85.37%
+Absolute Accuracy: 87.80%
+
+DEEPLEARNING
+dEEPERLEARNIN6
+DEERE5JLEARNZNG
+
+Detecting >>> 02_letters.jpg
+Actual Accuracy: 83.33%
+Absolute Accuracy: 88.89%
+
+ABCDEfG
+HIJKLMN
+OPQRStY
+VWXYZ
+12345G78gD
+
+Detecting >>> 01_list.jpg
+Found 2 joined letters
+Actual Accuracy: 87.83%
+Absolute Accuracy: 87.83%
+
+JDDOLI5T
+IMAREATODOLIST
+2CHECKOFFTHEFIfST
+THINQONTODOLZST
+3REAEE2EYOUHAVEAfREADY
+COMPLErED2THINGS
+4REWARDYOURSELFWITH
+RNAP

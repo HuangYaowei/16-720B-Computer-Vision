@@ -1,8 +1,9 @@
-import numpy as np
 import scipy.io
-from nn import *
+import numpy as np
 import matplotlib.pyplot as plt
 from skimage.measure import compare_psnr as psnr
+
+from nn import *
 
 train_data = scipy.io.loadmat('../data/nist36_train.mat')
 valid_data = scipy.io.loadmat('../data/nist36_valid.mat')
@@ -16,7 +17,7 @@ dim = 32
 U, S, V = np.linalg.svd(train_x.T)
 
 # Rebuild a low-rank version
-lrank = train_x.dot(U[:, :dim])
+lrank = np.dot(train_x, U[:, :dim])
 
 # Rebuild it
 recon = lrank @ U[:, :dim].T

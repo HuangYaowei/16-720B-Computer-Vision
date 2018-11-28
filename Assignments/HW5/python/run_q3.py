@@ -81,16 +81,13 @@ print('\nValidation Accuracy:', valid_acc)
 
 if False:
     for crop in xb:
-        import matplotlib.pyplot as plt
-        plt.imshow(crop.reshape(32, 32).T)
+        plt.imshow(crop.reshape(32, 32).T, cmap='gray')
         plt.show()
 
 saved_params = {k:v for k,v in params.items() if '_' not in k}
 with open('q3_weights_new.pickle', 'wb') as handle:
     pickle.dump(saved_params, handle, protocol=pickle.HIGHEST_PROTOCOL)
 sys.exit(0)
-
-# Q3.1.3
 
 # Q3.1.3
 confusion_matrix = np.zeros((train_y.shape[1], train_y.shape[1]))

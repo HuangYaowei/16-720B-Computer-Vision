@@ -21,6 +21,7 @@ batches = get_random_batches(train_x, train_y, batch_size)
 batch_num = len(batches)
 
 # Network model
+model_name = 'fcn_nist36'
 class Net(nn.Module):
     def __init__(self):
         super(Net, self).__init__()

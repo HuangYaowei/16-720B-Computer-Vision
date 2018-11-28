@@ -11,32 +11,34 @@ import torch.nn.functional as F
 from util import to_tensor
 from nn import get_random_batches
 
-def get_labels(data):
-    labels = np.zeros((data.shape[0], 17))
+def get_labels(data, n):
+    labels = np.zeros((data.shape[0], n))
     labels[np.arange(data.shape[0]), data[:].astype('int')] = 1
     return labels
 
-def data_loader(path):
+def data_loader(path, n, offset=1):
     data, labels = [], []
     for root, dirs, files in os.walk(path, topdown=False):
+        print(root)
         if root.split('/')[-1] == path.split('/')[-1]: continue
         data += [ skimage.transform.resize(skimage.io.imread(os.path.join(root, filename)).astype('float')/255, (224, 224, 3)) for filename in files ]
-        labels += [ int(root.split('/')[-1]) ] * len(files)
+        labels += [ int(root.split('/')[-1]) - offset ] * len(files)
 
     data = np.transpose(data, (0, 3, 1, 2))
-    labels = get_labels(np.asarray(labels))
+    labels = get_labels(np.asarray(labels), n)
     indices = np.random.permutation(data.shape[0])
     return data[indices], labels[indices]
 
-def reformat_data():
-    train_x, train_y = data_loader('../data/oxford-flowers17/train')
-    valid_x, valid_y = data_loader('../data/oxford-flowers17/val')
-    scipy.io.savemat('../data/flowers17_train.mat', {'train_data': train_x, 'train_labels': train_y})
-    scipy.io.savemat('../data/flowers17_valid.mat', {'valid_data': valid_x, 'valid_labels': valid_y})
+def reformat_data(n):
+    train_x, train_y = data_loader('../data/oxford-flowers%d/train'%n, n)
+    valid_x, valid_y = data_loader('../data/oxford-flowers%d/val'%n, n)
+    scipy.io.savemat('../data/flowers%d_train.mat'%n, {'train_data': train_x, 'train_labels': train_y})
+    scipy.io.savemat('../data/flowers%d_valid.mat'%n, {'valid_data': valid_x, 'valid_labels': valid_y})
 
 # Load data
-train_data = scipy.io.loadmat('../data/flowers17_train.mat')
-valid_data = scipy.io.loadmat('../data/flowers17_valid.mat')
+n = 17
+train_data = scipy.io.loadmat('../data/flowers%d_train.mat'%n)
+valid_data = scipy.io.loadmat('../data/flowers%d_valid.mat'%n)
 train_x, train_y = to_tensor(train_data['train_data']), to_tensor(train_data['train_labels'])
 valid_x, valid_y = to_tensor(valid_data['valid_data']), to_tensor(valid_data['valid_labels'])
 
@@ -49,7 +51,7 @@ train_batches = get_random_batches(train_x, train_y, batch_size)
 valid_batches = get_random_batches(valid_x, valid_y, batch_size)
 
 # Network model
-model_name = 'lenet5_flowers'
+model_name = 'lenet5_flowers%d'%n
 class Net(nn.Module):
     def __init__(self):
         super(Net, self).__init__()

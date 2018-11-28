@@ -7,33 +7,55 @@ import torch.nn.functional as F
 from util import to_tensor
 from nn import get_random_batches
 
-# Load data
-train_data = scipy.io.loadmat('../data/nist36_train.mat')
-valid_data = scipy.io.loadmat('../data/nist36_valid.mat')
+def get_labels(data):
+    labels = np.zeros((data.shape[0], 47))
+    labels[np.arange(data.shape[0]), data[:].astype('int')] = 1
+    return labels
+
+def save_mat(split, data, labels):
+    mat = {split + '_data': data, split + '_labels': labels}
+    scipy.io.savemat('../data/emnist_' + split, mat)
+
+def reformat_data():
+    # Load and parse raw data
+    emnist = scipy.io.loadmat('../data/emnist-balanced.mat')
+    train_data = emnist['dataset'][0][0][0][0][0][0].astype('float')/255
+    train_labels = get_labels(emnist['dataset'][0][0][0][0][0][1][:, 0])
+    valid_data = emnist['dataset'][0][0][1][0][0][0].astype('float')/255
+    valid_labels = get_labels(emnist['dataset'][0][0][1][0][0][1][:, 0])
+
+    # Save reformatted data
+    save_mat('train', train_data, train_labels)
+    save_mat('valid', valid_data, valid_labels)
+
+# Load data (Source: https://www.nist.gov/itl/iad/image-group/emnist-dataset)
+train_data = scipy.io.loadmat('../data/emnist_train.mat')
+valid_data = scipy.io.loadmat('../data/emnist_valid.mat')
 train_x, train_y = train_data['train_data'], to_tensor(train_data['train_labels'])
 valid_x, valid_y = valid_data['valid_data'], to_tensor(valid_data['valid_labels'])
 
 # Reshape data
-train_x = to_tensor(train_x.reshape(train_x.shape[0], 1, 32, 32))
-valid_x = to_tensor(valid_x.reshape(valid_x.shape[0], 1, 32, 32))
+train_x = to_tensor(train_x.reshape(train_x.shape[0], 1, 28, 28))
+valid_x = to_tensor(valid_x.reshape(valid_x.shape[0], 1, 28, 28))
 
 # Hyperparameters
 max_iters = 100
 learning_rate = 1e-2
 momentum = 0.9
-batch_size = 50
+batch_size = 100
 batches = get_random_batches(train_x, train_y, batch_size)
 batch_num = len(batches)
 
 # Network model
+model_name = 'cnn_emnist'
 class Net(nn.Module):
     def __init__(self):
         super(Net, self).__init__()
         self.conv1 = nn.Conv2d(1, 6, kernel_size=5)
         self.conv2 = nn.Conv2d(6, 16, kernel_size=5)
-        self.fc1 = torch.nn.Linear(16*5*5, 120)
+        self.fc1 = torch.nn.Linear(16*4*4, 120)
         self.fc2 = torch.nn.Linear(120, 84)
-        self.fc3 = torch.nn.Linear(84, 10)
+        self.fc3 = torch.nn.Linear(84, 47)
 
     def forward(self, x):
         x = F.max_pool2d(F.relu(self.conv1(x)), 2)

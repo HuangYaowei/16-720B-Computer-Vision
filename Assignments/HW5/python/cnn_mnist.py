@@ -12,9 +12,13 @@ def get_labels(data):
     labels[np.arange(data.shape[0]), data[:, -1].astype('int')] = 1
     return labels
 
-def txt2mat(data, split):
+def save_mat(split, data):
     mat = {split + '_data': data[:, :-1], split + '_labels': get_labels(data)}
     scipy.io.savemat('../data/mnist_' + split, mat)
+
+def reformat_data():
+    data = np.loadtxt('../data/mnist_test.txt')
+    save_mat('valid', data)
 
 # Load data (Source: http://www.cs.toronto.edu/~larocheh/public/datasets/mnist/)
 train_data = scipy.io.loadmat('../data/mnist_train.mat')
@@ -30,11 +34,12 @@ valid_x = to_tensor(valid_x.reshape(valid_x.shape[0], 1, 28, 28))
 max_iters = 100
 learning_rate = 1e-2
 momentum = 0.9
-batch_size = 50
+batch_size = 100
 batches = get_random_batches(train_x, train_y, batch_size)
 batch_num = len(batches)
 
 # Network model
+model_name = 'cnn_mnist'
 class Net(nn.Module):
     def __init__(self):
         super(Net, self).__init__()

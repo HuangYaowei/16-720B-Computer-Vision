@@ -12,7 +12,7 @@ train_x = train_data['train_data']
 valid_x = valid_data['valid_data']
 
 # Hyperparameters
-max_iters = 2
+max_iters = 100
 learning_rate = 3e-5
 momentum = 0.9
 lr_rate = 20

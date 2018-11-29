@@ -4,17 +4,7 @@ import torch
 import torch.optim as optim
 import torch.nn.functional as F
 
-def plot(data, title):
-    import matplotlib.pyplot as plt
-    plt.plot(np.arange(max_iters), data[:, 0])
-    plt.plot(np.arange(max_iters), data[:, 1])
-    plt.title('%s Curve'%title)
-    plt.xlabel('Epochs')
-    plt.ylabel('Total %s'%title)
-    plt.legend(['Train Data', 'Validation Data'])
-    plt.grid()
-    plt.savefig('../writeup/plots/%s_%s.png'%(model_name, title.lower()))
-    plt.show()
+from util import plot
 
 def accuracy(probs, y):
     probs = F.softmax(probs, dim=1)
@@ -98,6 +88,6 @@ if __name__ == '__main__':
     print('Took %.2fs'%(time.time() - start))
 
     # Plot and save graphs
-    plot(loss, 'Loss')
-    plot(acc, 'Accuracy')
+    plot(loss, 'Loss', model_name, max_iters)
+    plot(acc, 'Accuracy', model_name, max_iters)
     

@@ -23,3 +23,15 @@ def relu_deriv(x):
 def to_tensor(array):
     tensor = torch.from_numpy(array).type(torch.FloatTensor)
     return tensor
+
+def plot(data, title, model_name, max_iters):
+    import matplotlib.pyplot as plt
+    plt.plot(np.arange(max_iters), data[:, 0])
+    plt.plot(np.arange(max_iters), data[:, 1])
+    plt.title('%s Curve'%title)
+    plt.xlabel('Epochs')
+    plt.ylabel('Total %s'%title)
+    plt.legend(['Train Data', 'Validation Data'])
+    plt.grid()
+    plt.savefig('../writeup/plots/%s_%s.png'%(model_name, title.lower()))
+    plt.show()

@@ -1,4 +1,3 @@
-import sys
 import numpy as np
 from nn import *
 from util import *
@@ -89,8 +88,8 @@ for itr in range(max_iters):
     total_loss, total_acc = 0, 0
     for xb, yb in batches:
         # Forward pass
-        h1 = forward(xb, params, name='layer1', activation=sigmoid)
-        probs = forward(h1, params, name='output', activation=softmax)
+        h1 = forward(xb, params, 'layer1', sigmoid)
+        probs = forward(h1, params, 'output', softmax)
 
         # Loss and accuracy
         loss, acc = compute_loss_and_acc(yb, probs)
@@ -98,9 +97,10 @@ for itr in range(max_iters):
         total_acc += acc
 
         # Backward pass
-        error = probs - yb
-        delta1 = backwards(error, params, name='output', activation_deriv=linear_deriv)
-        delta2 = backwards(delta1, params, name='layer1', activation_deriv=sigmoid_deriv)
+        delta1 = probs
+        delta1[np.arange(probs.shape[0]), np.argmax(yb, axis=1)] -= 1
+        delta2 = backwards(delta1, params, 'output', linear_deriv)
+        delta3 = backwards(delta2, params, 'layer1', sigmoid_deriv)
 
         # Apply gradient
         for layer in ['output', 'layer1']:
@@ -110,39 +110,66 @@ for itr in range(max_iters):
     # Total accuracy
     avg_acc = total_acc / batch_num
 
-    if itr % 100 == 0:
+    if itr % 20 == 0:
         print("itr: {:03d} \t loss: {:.2f} \t acc : {:.2f}".format(itr, total_loss, avg_acc))
 
-# Q 2.5 should be implemented in this file
-# you can do this before or after training the network. 
-
-# save the old params
+# Save the old params
 import copy
 params_orig = copy.deepcopy(params)
 
-eps = 1e-6
-for k, v in params.items():
-    print(k)
-    if '_' in k: 
-        continue
-    # v += eps
-    # ((v + eps) + (v - eps)) / (2*eps)
+# Q 2.5 should be implemented in this file
+def forward_pass():
+    h1 = forward(x, params, 'layer1', sigmoid)
+    probs = forward(h1, params, 'output', softmax)
+    loss, acc = compute_loss_and_acc(y, probs)
+    return loss
 
-    # we have a real parameter!
-    # for each value inside the parameter
-    #   add epsilon
-    #   run the network
-    #   get the loss
-    #   compute derivative with central diffs
-sys.exit(0)
-    
+# Numerical method one step
+eps = np.float64(1e-6)
+for k, v in params.items():
+    if '_' in k: continue
+
+    # Weights
+    if len(params[k].shape) > 1:
+        for r in range(params[k].shape[0]):
+            for c in range(params[k].shape[1]):
+                value = params[k][r, c].copy()
+                params[k][r, c] = value + eps
+                f1 = forward_pass()
+                params[k][r, c] = value - eps
+                f2 = forward_pass()
+                params[k][r, c] = value
+
+                # Compute numerical gradient
+                params['grad_' + k][r, c] = (f1 - f2) / (2*eps)
+
+    # Bias
+    else:
+        value = params[k].copy()
+        params[k] = value + eps
+        f1 = forward_pass()
+        params[k] = value - eps
+        f2 = forward_pass()
+        params[k] = value
+
+        # Compute numerical gradient
+        params['grad_' + k] = np.full(params['grad_' + k].shape, (f1 - f2) / (2*eps))
+        
+# Sybolic method one step
+h1 = forward(x, params_orig, 'layer1', sigmoid)
+delta1 = forward(h1, params_orig, 'output', softmax)
+delta1[np.arange(delta1.shape[0]), np.argmax(y, axis=1)] -= 1
+delta2 = backwards(delta1, params_orig, 'output', linear_deriv)
+delta3 = backwards(delta2, params_orig, 'layer1', sigmoid_deriv)
+
+# Compute relative error
 total_error = 0
 for k in params.keys():
     if 'grad_' in k:
-        # relative error
         err = np.abs(params[k] - params_orig[k])/np.maximum(np.abs(params[k]), np.abs(params_orig[k]))
         err = err.sum()
         print('{} {:.2e}'.format(k, err))
         total_error += err
-# should be less than 1e-4
+
+# Should be less than 1e-4
 print('total {:.2e}'.format(total_error))

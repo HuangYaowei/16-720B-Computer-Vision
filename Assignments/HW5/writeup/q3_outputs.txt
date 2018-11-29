@@ -1,0 +1,6 @@
+LR: 0.01
+Train Accuracy: 0.989351851851851
+Validation Accuracy: 0.7555555555555555
+Test Accuracy: 0.7644444444444445
+
+

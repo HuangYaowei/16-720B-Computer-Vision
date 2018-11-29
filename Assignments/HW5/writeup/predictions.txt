@@ -1,4 +1,4 @@
-FCN -----------------------------
+FCN 1-e2 -----------------------------
 Detecting >>> 03_haiku.jpg
 Accuracy: 87.04%
 
@@ -33,6 +33,43 @@ THING0NT0D0LI5T
 ZRFALIZEY0UHAVEALREADT
 E0MPLETCDZTHINGS
 4REWRRDY0URSELFWITH
+ANAP
+
+FCN 1-e3 -----------------------------
+Detecting >>> 03_haiku.jpg
+Accuracy: 88.89%
+
+HAIKUSAREEASY
+BUTSQMETIMESTREXDONTMAKESEMQE
+REFRIGERAT0R
+
+Detecting >>> 04_deep.jpg
+Accuracy: 85.37%
+
+DEEPLEARMING
+DEEPERLEARKIM6
+DEERESTLEARNIN6
+
+Detecting >>> 02_letters.jpg
+Accuracy: 77.78%
+
+2BCDEFG
+HIJKLMN
+0PQR5TW
+VWXYZ
+1Z3MS6789O
+
+Detecting >>> 01_list.jpg
+Found 2 joined letters
+Accuracy: 85.22%
+
+T0D0LIST
+IMAKEATO2OLIST
+2CHREKOFFTHEFIRST
+THING0NT0O0LI5T
+3RFALIZEY0UHAVEALREADT
+C0MPLETED2THINGS
+4REWARDX0URSELFWITH
 ANAP
 
 CNN -----------------------------

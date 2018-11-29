@@ -3,4 +3,13 @@ Train Accuracy: 0.989351851851851
 Validation Accuracy: 0.7555555555555555
 Test Accuracy: 0.7644444444444445
 
+LR 0.001
+Train Accuracy: 0.8575000000000008
+Validation Accuracy: 0.7733333333333333
+Test Accuracy: 0.7794444444444445
+
+LR 0.0001
+Train Accuracy: 0.6371296296296295
+Validation Accuracy: 0.6186111111111111
+Test Accuracy: 0.6183333333333333
 

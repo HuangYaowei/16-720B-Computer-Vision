@@ -12,9 +12,9 @@ from grid import display_grid
 
 TRAIN = True
 TEST = True
-SAVE_PARAMS = True
+SAVE_PARAMS = False
 LOAD_PARAMS = False
-model_name = 'q3_fcn_nist36_e2'
+model_name = 'q3_fcn_nist36'
 
 def visualize_weights(weights):
     weights_list = [ weight.reshape(32, 32) for weight in weights.T ]
@@ -32,7 +32,7 @@ test_x, test_y = test_data['test_data'], test_data['test_labels']
 if TRAIN:
     # Hyperparameters
     max_iters = 100
-    learning_rate = 1e-2
+    learning_rate = 1e-4
     hidden_size = 64
     batch_size = 50
     batches = get_random_batches(train_x, train_y, batch_size)
@@ -104,7 +104,7 @@ if TRAIN:
     # Save trained weights
     if SAVE_PARAMS:
         saved_params = {k:v for k,v in params.items() if '_' not in k}
-        with open('q3_weights_new.pickle', 'wb') as handle:
+        with open('q3_weights.pickle', 'wb') as handle:
             pickle.dump(saved_params, handle, protocol=pickle.HIGHEST_PROTOCOL)
 
     # Plot and save graphs

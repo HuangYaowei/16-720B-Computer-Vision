@@ -8,8 +8,10 @@ from nn import *
 # Load data
 train_data = scipy.io.loadmat('../data/nist36_train.mat')
 valid_data = scipy.io.loadmat('../data/nist36_valid.mat')
+test_data = scipy.io.loadmat('../data/nist36_test.mat')
 train_x = train_data['train_data']
 valid_x = valid_data['valid_data']
+test_x = test_data['test_data']
 
 # Hyperparameters
 max_iters = 100
@@ -71,8 +73,8 @@ for itr in range(max_iters):
         learning_rate *= momentum
 
 # Q5.3.1
-indices = [0, 1, 1000, 1001, 3000, 3001, 5000, 5001, 7000, 7001]
-h1 = forward(train_x[indices], params, 'layer1', relu)
+indices = [0, 1, 300, 301, 1000, 1001, 1300, 1301, 1700, 1701]
+h1 = forward(test_x[indices], params, 'layer1', relu)
 h2 = forward(h1, params, 'hidden', relu)
 h3 = forward(h2, params, 'hidden2', relu)
 out = forward(h3, params, 'output', sigmoid)
@@ -81,11 +83,11 @@ out = forward(h3, params, 'output', sigmoid)
 fig, ax = plt.subplots(2, 2, sharex=True, sharey=True)
 for i in range(0, 10, 2):
     plt.subplot(2, 2, 1)
-    plt.imshow(train_x[indices[i]].reshape(32, 32).T, cmap='gray')
+    plt.imshow(test_x[indices[i]].reshape(32, 32).T, cmap='gray')
     plt.subplot(2, 2, 3)
     plt.imshow(out[i].reshape(32, 32).T, cmap='gray')
     plt.subplot(2, 2, 2)
-    plt.imshow(train_x[indices[i+1]].reshape(32, 32).T, cmap='gray')
+    plt.imshow(test_x[indices[i+1]].reshape(32, 32).T, cmap='gray')
     plt.subplot(2, 2, 4)
     plt.imshow(out[i+1].reshape(32, 32).T, cmap='gray')
     plt.show()
@@ -95,6 +97,7 @@ plt.plot(np.arange(max_iters), all_loss)
 plt.title('Training Loss Curve')
 plt.xlabel('Epochs')
 plt.ylabel('Total Loss')
+plt.grid()
 plt.show()
 
 # Q5.3.2

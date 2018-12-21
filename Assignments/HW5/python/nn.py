@@ -1,3 +1,15 @@
+#!/usr/bin/python3
+
+'''
+16-720B Computer Vision (Fall 2018)
+Homework 5 - Neural Networks for Recognition
+'''
+
+__author__ = "Heethesh Vhavle"
+__credits__ = ["Simon Lucey", "16-720B TAs"]
+__version__ = "1.0.1"
+__email__ = "heethesh@cmu.edu"
+
 import numpy as np
 from util import *
 
@@ -105,7 +117,7 @@ def backwards(delta, params, name='', activation_deriv=sigmoid_deriv):
     grad_A = delta * activation_deriv(post_act)
     grad_X = grad_A @ W.T
     grad_W = X.T @ grad_A
-    grad_b = np.full(b.shape, np.sum(grad_A))
+    grad_b = np.full(b.shape, np.sum(grad_A, axis=0))
 
     # Store the gradients
     params['grad_W' + name] = grad_W

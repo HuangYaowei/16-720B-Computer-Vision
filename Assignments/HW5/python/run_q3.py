@@ -1,3 +1,15 @@
+#!/usr/bin/python3
+
+'''
+16-720B Computer Vision (Fall 2018)
+Homework 5 - Neural Networks for Recognition
+'''
+
+__author__ = "Heethesh Vhavle"
+__credits__ = ["Simon Lucey", "16-720B TAs"]
+__version__ = "1.0.1"
+__email__ = "heethesh@cmu.edu"
+
 import pickle
 import string
 
@@ -32,7 +44,7 @@ test_x, test_y = test_data['test_data'], test_data['test_labels']
 if TRAIN:
     # Hyperparameters
     max_iters = 100
-    learning_rate = 1e-4
+    learning_rate = 1e-3
     hidden_size = 64
     batch_size = 50
     batches = get_random_batches(train_x, train_y, batch_size)

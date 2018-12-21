@@ -1,8 +1,14 @@
-#!/usr/bin/env python
+#!/usr/bin/python3
 
-"""
-Display a grid of thumbnails.
-"""
+'''
+16-720B Computer Vision (Fall 2018)
+Homework 5 - Neural Networks for Recognition
+'''
+
+__author__ = "Heethesh Vhavle"
+__credits__ = ["Simon Lucey", "16-720B TAs"]
+__version__ = "1.0.1"
+__email__ = "heethesh@cmu.edu"
 
 import os
 import PIL

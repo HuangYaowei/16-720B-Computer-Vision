@@ -1,3 +1,15 @@
+#!/usr/bin/python3
+
+'''
+16-720B Computer Vision (Fall 2018)
+Homework 5 - Neural Networks for Recognition
+'''
+
+__author__ = "Heethesh Vhavle"
+__credits__ = ["Simon Lucey", "16-720B TAs"]
+__version__ = "1.0.1"
+__email__ = "heethesh@cmu.edu"
+
 import os
 import pickle
 import string
@@ -29,7 +41,7 @@ for img in os.listdir('../images'):
     # Find and sort letters per line
     bboxes, bw = findLetters(im1)
     bboxes, counts = sortLetters(bboxes)
-    # plt.imshow(bw)
+    plt.imshow(bw, cmap='gray')
 
     # Preprocessing
     letters_to_detect = []
@@ -51,10 +63,10 @@ for img in os.listdir('../images'):
 
         # Draw bounding boxes
         rect = matplotlib.patches.Rectangle((minc, minr), maxc-minc, maxr-minr, fill=False, edgecolor='red', linewidth=2)
-        # plt.gca().add_patch(rect)
+        plt.gca().add_patch(rect)
     
     # Display the image
-    # plt.show()
+    plt.show()
 
     # Test data
     letters_to_detect = np.vstack(letters_to_detect)

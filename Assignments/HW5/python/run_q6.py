@@ -1,3 +1,15 @@
+#!/usr/bin/python3
+
+'''
+16-720B Computer Vision (Fall 2018)
+Homework 5 - Neural Networks for Recognition
+'''
+
+__author__ = "Heethesh Vhavle"
+__credits__ = ["Simon Lucey", "16-720B TAs"]
+__version__ = "1.0.1"
+__email__ = "heethesh@cmu.edu"
+
 import scipy.io
 import numpy as np
 import matplotlib.pyplot as plt
@@ -22,14 +34,21 @@ dim = 32
 U, S, V = np.linalg.svd(train_x, full_matrices=False)
 
 # Rebuild a low-rank version
-lrank = np.diag(S)[:dim, :dim] @ V[:dim, :]
+lrank = V[:dim, :] 
 print(lrank.shape)
+print(np.linalg.matrix_rank(lrank))
 
 # Rebuild it
-recon = U[:, :dim] @ lrank
+recon = U[:, :dim] @ np.diag(S)[:dim, :dim] @ lrank
+# for i in range(5):
+#     plt.subplot(2,1,1)
+#     plt.imshow(train_x[i].reshape(32,32).T)
+#     plt.subplot(2,1,2)
+#     plt.imshow(recon[i].reshape(32,32).T)
+#     plt.show()
 
 # Build valid dataset
-recon_test = test_x @ V[:dim, :].T @ V[:dim, :]
+recon_test = test_x @ lrank.T @ lrank
 
 # Visualize results on test dataset
 indices = [0, 1, 300, 301, 1000, 1001, 1300, 1301, 1700, 1701]
@@ -46,7 +65,7 @@ for i in range(0, 10, 2):
     plt.show()
 
 # Build valid dataset
-recon_valid = valid_x @ V[:dim, :].T @ V[:dim, :]
+recon_valid = valid_x @ lrank.T @ lrank
 
 total = []
 for pred, gt in zip(recon_valid, valid_x):

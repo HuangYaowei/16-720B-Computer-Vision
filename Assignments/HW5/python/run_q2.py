@@ -1,3 +1,15 @@
+#!/usr/bin/python3
+
+'''
+16-720B Computer Vision (Fall 2018)
+Homework 5 - Neural Networks for Recognition
+'''
+
+__author__ = "Heethesh Vhavle"
+__credits__ = ["Simon Lucey", "16-720B TAs"]
+__version__ = "1.0.1"
+__email__ = "heethesh@cmu.edu"
+
 import numpy as np
 from nn import *
 from util import *
@@ -145,15 +157,16 @@ for k, v in params.items():
 
     # Bias
     else:
-        value = params[k].copy()
-        params[k] = value + eps
-        f1 = forward_pass()
-        params[k] = value - eps
-        f2 = forward_pass()
-        params[k] = value
+        for r in range(params[k].shape[0]):
+            value = params[k][r].copy()
+            params[k][r] = value + eps
+            f1 = forward_pass()
+            params[k][r] = value - eps
+            f2 = forward_pass()
+            params[k][r] = value
 
-        # Compute numerical gradient
-        params['grad_' + k] = np.full(params['grad_' + k].shape, (f1 - f2) / (2*eps))
+            # Compute numerical gradient
+            params['grad_' + k][r] = (f1 - f2) / (2*eps)
         
 # Sybolic method one step
 h1 = forward(x, params_orig, 'layer1', sigmoid)

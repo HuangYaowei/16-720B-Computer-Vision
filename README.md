@@ -8,5 +8,4 @@
 - HW3 - Lucas-Kanade Tracking and Correlation Filters
 - HW4 - 3D Reconstruction
 - HW5 - Neural Networks for Recognition
-- HW6 - 3D Reconstruction using Iterative Closest Point (Project)
-
+- HW6 - Multi-View 3D Reconstruction using Iterative Closest Point (Project)
